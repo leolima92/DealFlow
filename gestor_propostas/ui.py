@@ -8,21 +8,21 @@ from .models import GestorPropostas, Cliente, Proposta, ItemProposta
 from .excel_report import ExcelReportGenerator
 from .pdf_report import PdfReportGenerator
 
+
 class App(tk.Tk):
-    def __init__(self, gestor: GestorPropostas):
+    def __init__(self, gestor: GestorPropostas, usuario_logado: Optional[str] = None):
         super().__init__()
         self.title("Sistema de Gestão de Propostas Comerciais")
         self.geometry("1000x550")
 
         self.gestor = gestor
+        self.usuario_logado = usuario_logado  
         self.filtro_status_var = tk.StringVar(value="Todos")
-        self.busca_var = tk.StringVar(value="")  # campo de busca
+        self.busca_var = tk.StringVar(value="")
 
         self._criar_widgets()
 
-
     def _criar_widgets(self):
-        # Frame de clientes
         frame_clientes = ttk.LabelFrame(self, text="Clientes")
         frame_clientes.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
@@ -34,11 +34,9 @@ class App(tk.Tk):
         )
         btn_novo_cliente.pack(side=tk.TOP, fill=tk.X, padx=5, pady=2)
 
-        # Frame de propostas
         frame_propostas = ttk.LabelFrame(self, text="Propostas")
         frame_propostas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Linha de filtro + busca
         frame_filtro = ttk.Frame(frame_propostas)
         frame_filtro.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
 
@@ -53,25 +51,21 @@ class App(tk.Tk):
         self.combo_filtro_status.pack(side=tk.LEFT, padx=5)
         self.combo_filtro_status.bind("<<ComboboxSelected>>", lambda e: self.atualizar_listas())
 
-        # Campo de busca
         ttk.Label(frame_filtro, text="Buscar (cliente/título):").pack(side=tk.LEFT, padx=(15, 0))
         entry_busca = ttk.Entry(frame_filtro, textvariable=self.busca_var, width=30)
         entry_busca.pack(side=tk.LEFT, padx=5)
 
-        # Enter também dispara a busca
         entry_busca.bind("<Return>", lambda e: self.atualizar_listas())
 
         ttk.Button(frame_filtro, text="Buscar", command=self.atualizar_listas)\
             .pack(side=tk.LEFT, padx=2)
         ttk.Button(frame_filtro, text="Limpar", command=self.limpar_busca)\
             .pack(side=tk.LEFT, padx=2)
-
-        # Lista de propostas
+            
         self.listbox_propostas = tk.Listbox(frame_propostas, height=10)
         self.listbox_propostas.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=5, pady=5)
         self.listbox_propostas.bind("<<ListboxSelect>>", lambda e: self.atualizar_itens_treeview())
 
-        # Tabela de itens da proposta selecionada
         ttk.Label(frame_propostas, text="Itens da proposta selecionada:")\
             .pack(anchor="w", padx=5, pady=(5, 0))
 
@@ -94,7 +88,6 @@ class App(tk.Tk):
 
         self.tree_itens.pack(side=tk.TOP, fill=tk.BOTH, expand=False, padx=5, pady=5)
 
-        # Botões de ações de proposta
         frame_botoes = ttk.Frame(frame_propostas)
         frame_botoes.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=5)
 
@@ -111,38 +104,30 @@ class App(tk.Tk):
         ttk.Button(frame_botoes, text="Gerar Excel", command=self.acao_gerar_excel)\
             .grid(row=0, column=5, padx=2, pady=2, sticky="ew")
 
-        # Linha de botões de edição
         ttk.Button(frame_botoes, text="Editar Proposta", command=self.janela_editar_proposta)\
             .grid(row=1, column=0, padx=2, pady=2, sticky="ew")
         ttk.Button(frame_botoes, text="Editar Item", command=self.janela_editar_item)\
             .grid(row=1, column=1, padx=2, pady=2, sticky="ew")
         ttk.Button(frame_botoes, text="Gerar PDF Proposta", command=self.acao_gerar_pdf)\
-            .grid(row=1, column=2, padx=2, pady=2, sticky="ew")  # 👈 NOVO
-
+            .grid(row=1, column=2, padx=2, pady=2, sticky="ew")
 
         for i in range(6):
             frame_botoes.columnconfigure(i, weight=1)
 
-        # Status bar
         self.status_var = tk.StringVar()
-        self.status_var.set("Pronto.")
+        if self.usuario_logado:
+            self.status_var.set(f"Pronto. Usuário: {self.usuario_logado}")
+        else:
+            self.status_var.set("Pronto.")
         status_bar = ttk.Label(self, textvariable=self.status_var, relief=tk.SUNKEN, anchor="w")
         status_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
-
     def _get_propostas_filtradas(self):
-        """Retorna a lista de propostas respeitando:
-        - filtro de status
-        - texto de busca (cliente / título)
-        """
         propostas = self.gestor.listar_propostas()
-
-        # filtro por status
         filtro = self.filtro_status_var.get()
         if filtro != "Todos":
             propostas = [p for p in propostas if p.status == filtro]
 
-        # filtro por texto (cliente ou título)
         texto = self.busca_var.get().strip().lower()
         if texto:
             propostas = [
@@ -154,26 +139,22 @@ class App(tk.Tk):
         return propostas
 
     def atualizar_listas(self):
-        # Clientes
         self.listbox_clientes.delete(0, tk.END)
         for c in self.gestor.listar_clientes():
             self.listbox_clientes.insert(tk.END, str(c))
-
-        # Propostas (aplicando filtros)
+            
         self.listbox_propostas.delete(0, tk.END)
         propostas = self._get_propostas_filtradas()
 
         for p in propostas:
             self.listbox_propostas.insert(tk.END, str(p))
 
-        # Atualiza itens da proposta selecionada (se houver)
+       
         self.atualizar_itens_treeview()
-
-        # Atualiza status bar com total encontrado
+    
         self.status_var.set(f"{len(propostas)} proposta(s) encontrada(s).")
 
     def atualizar_itens_treeview(self):
-        # Limpa a tabela
         for item in self.tree_itens.get_children():
             self.tree_itens.delete(item)
 
@@ -197,6 +178,7 @@ class App(tk.Tk):
         self.busca_var.set("")
         self.atualizar_listas()
 
+
     def _obter_cliente_selecionado(self) -> Optional[Cliente]:
         idx = self.listbox_clientes.curselection()
         if not idx:
@@ -213,7 +195,6 @@ class App(tk.Tk):
         if 0 <= idx[0] < len(propostas):
             return propostas[idx[0]]
         return None
-
 
     def janela_novo_cliente(self):
         win = tk.Toplevel(self)
@@ -378,7 +359,44 @@ class App(tk.Tk):
             self.status_var.set(f"Proposta #{proposta.id} atualizada com sucesso.")
 
         ttk.Button(win, text="Salvar alterações", command=salvar).pack(pady=10)
-        
+
+    def janela_status(self):
+        proposta = self._obter_proposta_selecionada()
+        if not proposta:
+            messagebox.showinfo("Informação", "Selecione uma proposta.")
+            return
+
+        win = tk.Toplevel(self)
+        win.title(f"Alterar Status - Proposta #{proposta.id}")
+        win.geometry("300x180")
+
+        ttk.Label(win, text=f"Status atual: {proposta.status}")\
+            .pack(anchor="w", padx=10, pady=5)
+        ttk.Label(win, text="Novo status:").pack(anchor="w", padx=10, pady=5)
+
+        status_var = tk.StringVar(value=proposta.status)
+        combo_status = ttk.Combobox(
+            win,
+            values=Proposta.STATUS_VALIDOS,
+            textvariable=status_var,
+            state="readonly"
+        )
+        combo_status.pack(fill=tk.X, padx=10)
+
+        def aplicar():
+            novo_status = combo_status.get()
+            try:
+                proposta.alterar_status(novo_status)
+                self.atualizar_listas()
+                self.status_var.set(
+                    f"Status da Proposta #{proposta.id} alterado para '{novo_status}'."
+                )
+                win.destroy()
+            except ValueError as e:
+                messagebox.showerror("Erro", str(e))
+
+        ttk.Button(win, text="Alterar", command=aplicar).pack(pady=10)
+
     def janela_desconto(self):
         proposta = self._obter_proposta_selecionada()
         if not proposta:
@@ -435,43 +453,6 @@ class App(tk.Tk):
 
         ttk.Button(win, text="Aplicar", command=aplicar).pack(pady=10)
 
-    def janela_status(self):
-        proposta = self._obter_proposta_selecionada()
-        if not proposta:
-            messagebox.showinfo("Informação", "Selecione uma proposta.")
-            return
-
-        win = tk.Toplevel(self)
-        win.title(f"Alterar Status - Proposta #{proposta.id}")
-        win.geometry("300x180")
-
-        ttk.Label(win, text=f"Status atual: {proposta.status}")\
-            .pack(anchor="w", padx=10, pady=5)
-        ttk.Label(win, text="Novo status:").pack(anchor="w", padx=10, pady=5)
-
-        status_var = tk.StringVar(value=proposta.status)
-        combo_status = ttk.Combobox(
-            win,
-            values=Proposta.STATUS_VALIDOS,
-            textvariable=status_var,
-            state="readonly"
-        )
-        combo_status.pack(fill=tk.X, padx=10)
-
-        def aplicar():
-            novo_status = combo_status.get()
-            try:
-                proposta.alterar_status(novo_status)
-                self.atualizar_listas()
-                self.status_var.set(
-                    f"Status da Proposta #{proposta.id} alterado para '{novo_status}'."
-                )
-                win.destroy()
-            except ValueError as e:
-                messagebox.showerror("Erro", str(e))
-
-        ttk.Button(win, text="Alterar", command=aplicar).pack(pady=10)
-
     def acao_duplicar_proposta(self):
         proposta = self._obter_proposta_selecionada()
         if not proposta:
@@ -495,7 +476,6 @@ class App(tk.Tk):
 
         self.atualizar_listas()
         self.status_var.set(f"Proposta #{proposta.id} duplicada como #{nova.id}.")
-
 
     def janela_adicionar_itens(self):
         proposta = self._obter_proposta_selecionada()
@@ -653,7 +633,7 @@ class App(tk.Tk):
             self.status_var.set(f"Excel gerado em: {caminho_final}")
         except Exception as e:
             messagebox.showerror("Erro", f"Ocorreu um erro ao gerar o Excel:\n{e}")
-        
+
     def acao_gerar_pdf(self):
         proposta = self._obter_proposta_selecionada()
         if not proposta:
