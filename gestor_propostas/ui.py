@@ -6,7 +6,7 @@ from tkinter import ttk, messagebox, filedialog
 
 from .models import GestorPropostas, Cliente, Proposta, ItemProposta
 from .excel_report import ExcelReportGenerator
-
+from .pdf_report import PdfReportGenerator
 
 class App(tk.Tk):
     def __init__(self, gestor: GestorPropostas):
@@ -116,6 +116,9 @@ class App(tk.Tk):
             .grid(row=1, column=0, padx=2, pady=2, sticky="ew")
         ttk.Button(frame_botoes, text="Editar Item", command=self.janela_editar_item)\
             .grid(row=1, column=1, padx=2, pady=2, sticky="ew")
+        ttk.Button(frame_botoes, text="Gerar PDF Proposta", command=self.acao_gerar_pdf)\
+            .grid(row=1, column=2, padx=2, pady=2, sticky="ew")  # 👈 NOVO
+
 
         for i in range(6):
             frame_botoes.columnconfigure(i, weight=1)
@@ -650,3 +653,29 @@ class App(tk.Tk):
             self.status_var.set(f"Excel gerado em: {caminho_final}")
         except Exception as e:
             messagebox.showerror("Erro", f"Ocorreu um erro ao gerar o Excel:\n{e}")
+        
+    def acao_gerar_pdf(self):
+        proposta = self._obter_proposta_selecionada()
+        if not proposta:
+            messagebox.showinfo("Informação", "Selecione uma proposta para gerar o PDF.")
+            return
+
+        default_name = f"proposta_{proposta.id}.pdf"
+        caminho = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            filetypes=[("Arquivo PDF", "*.pdf")],
+            initialfile=default_name,
+            title="Salvar PDF da Proposta"
+        )
+        if not caminho:
+            return
+
+        try:
+            PdfReportGenerator.gerar_pdf_proposta(proposta, caminho)
+            messagebox.showinfo(
+                "Sucesso",
+                f"PDF da Proposta #{proposta.id} gerado em:\n{caminho}"
+            )
+            self.status_var.set(f"PDF gerado em: {caminho}")
+        except Exception as e:
+            messagebox.showerror("Erro", f"Ocorreu um erro ao gerar o PDF:\n{e}")
