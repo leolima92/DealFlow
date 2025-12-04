@@ -113,9 +113,29 @@ def register():
 @app.route("/")
 @login_required
 def index():
-    """Lista de propostas."""
+    q = request.args.get("q", "").strip().lower()
+    status = request.args.get("status", "").strip()
+
     propostas = gestor.listar_propostas()
-    return render_template("index.html", propostas=propostas)
+
+    if status:
+        propostas = [p for p in propostas if p.status == status]
+
+    if q:
+        propostas = [
+            p for p in propostas
+            if q in p.titulo.lower() or q in p.cliente.nome.lower()
+        ]
+    statuses = sorted({p.status for p in gestor.listar_propostas()})
+
+    return render_template(
+        "index.html",
+        propostas=propostas,
+        filtro_q=q,
+        filtro_status=status,
+        statuses=statuses,
+    )
+
 
 
 @app.route("/propostas/<int:pid>")
@@ -215,7 +235,7 @@ def add_item(pid: int):
 @app.route("/propostas/<int:pid>/desconto", methods=["POST"])
 @login_required
 def aplicar_desconto(pid: int):
-    """Aplicar ou limpar desconto da proposta."""
+   
     proposta = next((p for p in gestor.propostas if p.id == pid), None)
     if not proposta:
         flash("Proposta não encontrada.", "error")
@@ -250,6 +270,29 @@ def aplicar_desconto(pid: int):
     return redirect(url_for("proposta_detalhe", pid=pid))
 
 
+@app.route("/propostas/<int:pid>/excluir", methods=["POST"])
+@login_required
+def excluir_proposta(pid: int):
+    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    if not proposta:
+        flash("Proposta não encontrada.", "error")
+        return redirect(url_for("index"))
+
+    gestor.propostas = [p for p in gestor.propostas if p.id != pid]
+
+    try:
+        if hasattr(StorageManager, "excluir_proposta"):
+            StorageManager.excluir_proposta(pid)
+        elif hasattr(StorageManager, "deletar_proposta"):
+            StorageManager.deletar_proposta(pid)
+    except Exception:
+        
+        flash("Erro ao excluir no banco, mas proposta foi removida da lista atual.", "error")
+
+    flash(f"Proposta #{pid} excluída com sucesso.", "success")
+    return redirect(url_for("index"))
+
+
 @app.route("/propostas/<int:pid>/excel")
 @login_required
 def download_excel(pid: int):
@@ -265,7 +308,6 @@ def download_excel(pid: int):
 @app.route("/propostas/<int:pid>/pdf")
 @login_required
 def download_pdf(pid: int):
-    """Gera o PDF de uma proposta e manda pro browser."""
     proposta = next((p for p in gestor.propostas if p.id == pid), None)
     if not proposta:
         flash("Proposta não encontrada.", "error")

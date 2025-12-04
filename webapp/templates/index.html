@@ -10,6 +10,38 @@
     </a>
   </div>
 
+  <!-- Filtros -->
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-5">
+      <input
+        type="text"
+        name="q"
+        class="form-control"
+        placeholder="Buscar por título ou cliente..."
+        value="{{ filtro_q or '' }}"
+      >
+    </div>
+
+    <div class="col-md-3">
+      <select name="status" class="form-select">
+        <option value="">Todos os status</option>
+        {% for s in statuses %}
+          <option value="{{ s }}" {% if filtro_status == s %}selected{% endif %}>
+            {{ s }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2 d-grid">
+      <button type="submit" class="btn btn-outline-primary">Filtrar</button>
+    </div>
+
+    <div class="col-md-2 d-grid">
+      <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Limpar</a>
+    </div>
+  </form>
+
   {% if propostas %}
     <table class="table table-striped table-hover align-middle">
       <thead>
@@ -19,7 +51,7 @@
           <th>Cliente</th>
           <th>Status</th>
           <th>Total</th>
-          <th></th>
+          <th class="text-end">Ações</th>
         </tr>
       </thead>
       <tbody>
@@ -31,15 +63,25 @@
             <td>{{ p.status }}</td>
             <td>R$ {{ "%.2f"|format(p.calcular_total()) }}</td>
             <td class="text-end">
-              <a href="{{ url_for('proposta_detalhe', pid=p.id) }}" class="btn btn-sm btn-outline-secondary">
+              <a href="{{ url_for('proposta_detalhe', pid=p.id) }}"
+                 class="btn btn-sm btn-outline-secondary">
                 Detalhes
               </a>
+
+              <form action="{{ url_for('excluir_proposta', pid=p.id) }}"
+                    method="post"
+                    style="display:inline-block;"
+                    onsubmit="return confirm('Tem certeza que deseja excluir a Proposta #{{ p.id }}?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  Excluir
+                </button>
+              </form>
             </td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
   {% else %}
-    <p>Nenhuma proposta cadastrada ainda.</p>
+    <p>Nenhuma proposta encontrada para esse filtro.</p>
   {% endif %}
 {% endblock %}
