@@ -1,134 +1,109 @@
-# 🧾 Sistema de Gestão de Propostas Comerciais
+# 💼 DealFlow  
+### Sistema moderno de gestão de propostas comerciais
 
-**Aplicação desktop desenvolvida em Python + Tkinter, com arquitetura orientada a objetos e exportação profissional para Excel.**
-
----
-
-## 📌 Sobre o Projeto
-
-O **Sistema de Gestão de Propostas Comerciais** é uma aplicação simples, porém robusta, para gerenciamento de clientes, criação de propostas e geração de relatórios em Excel.
-
-Ele oferece uma experiência completa para pequenas empresas, freelancers ou equipes comerciais que precisam registrar oportunidades e gerar propostas organizadas, mantendo tudo centralizado em um único sistema.
+DealFlow é um sistema profissional para criação, gerenciamento e envio de propostas comerciais.  
+Desenvolvido em **Python + Flask**, o projeto oferece uma interface elegante, modo escuro, geração de PDFs, exportação Excel, controle de usuários, formas de pagamento e muito mais.
 
 ---
 
 ## 🚀 Funcionalidades Principais
 
-### 👤 **Gerenciamento de Clientes**
+### 📝 Criação completa de propostas
+- Cadastro de clientes  
+- Itens detalhados (descrição, quantidade, valor unitário)  
+- Cálculo automático de subtotal e total  
+- Descontos percentuais ou por valor  
+- Condições de pagamento estruturadas (PIX, cartão, boleto, parcelas etc.)
 
-* Cadastro de novos clientes
-* Documento e informações de contato opcionais
-* Lista sempre atualizada na interface
+### 🎨 Modo Escuro (Dark Mode)
+- Alternância entre tema claro/escuro  
+- Preferência é salva automaticamente no navegador  
+- Interface moderna e agradável
 
-### 🧾 **Criação e Gerenciamento de Propostas**
+### 📄 Exportação
+- Geração de **PDF profissional**
+- Exportação de todas as propostas para **Excel**
+- Downloads diretos com um clique
 
-* Definição de título, validade, responsável e condições de pagamento
-* Status da proposta:
+### 🔐 Sistema de Login
+- Cadastro de usuários
+- Autenticação por sessão
+- Proteção das rotas administrativas
 
-  * *rascunho, enviada, aceita, recusada, cancelada*
-* Filtro por status direto na interface
+### 🔁 Controle de Status da Proposta
+- rascunho  
+- enviada  
+- aceita  
+- recusada  
+- cancelada  
 
-### 📦 **Itens de Proposta**
+Com botão dedicado para **Enviar Proposta**.
 
-* Adição de múltiplos itens com:
-
-  * Descrição
-  * Quantidade
-  * Valor unitário
-* Cálculo automático:
-
-  * Subtotal
-  * Desconto
-  * Total final
-
-### 💰 **Descontos**
-
-* Desconto em **%**
-* Desconto em **valor fixo (R$)**
-* Possibilidade de remover desconto
-
-### 📑 **Exportação para Excel**
-
-Geração automática de arquivo *Excel* com duas abas:
-
-* **Propostas:** informações gerais de cada proposta
-* **Itens:** lista detalhada de todos os itens vinculados
-
-### 🔁 **Duplicar Proposta**
-
-* Cria uma nova proposta com todos os campos e itens copiados
-* Útil para orçamentos recorrentes
+### ➕ Outras funcionalidades
+- Duplicar propostas
+- Excluir propostas
+- Filtrar por título, cliente e status
+- Dashboard inicial com métricas (propostas, clientes, valores)
 
 ---
 
-## 🧱 Arquitetura do Projeto (POO)
+## 🛠️ Tecnologias
 
-A aplicação segue uma estrutura clara e organizada:
+DealFlow foi construído com:
 
-### **Classes principais**
-
-| Classe                 | Responsabilidade                             |
-| ---------------------- | -------------------------------------------- |
-| `Cliente`              | Armazena dados do cliente                    |
-| `ItemProposta`         | Representa um item dentro da proposta        |
-| `Proposta`             | Controla itens, descontos, status e cálculos |
-| `GestorPropostas`      | Gerencia listas de clientes e propostas      |
-| `ExcelReportGenerator` | Gera o relatório Excel com abas              |
-| `App`                  | Interface gráfica (Tkinter)                  |
+- **Python 3.11+**
+- **Flask**
+- **SQLite** (persistência local)
+- **OpenPyXL** (Excel)
+- **FPDF** (relatórios em PDF)
+- **Bootstrap 5** (UI responsiva)
+- **JavaScript** (Dark mode + UX)
 
 ---
 
-## 🖥️ Tecnologias Utilizadas
+## 📦 Instalação
 
-* **Python 3.x**
-* **Tkinter** (GUI)
-* **OpenPyXL** (geração de planilhas Excel)
-* **POO (Programação Orientada a Objetos)**
-* **Typing** (tipagem opcional para maior clareza)
-
----
-
-## 📦 Como Executar o Projeto
-
-### 🔧 Pré-requisitos
-
-Certifique-se de ter o Python instalado:
-
+### 1. Clone o repositório
 ```bash
-python --version
-```
+git clone https://github.com/seu-usuario/dealflow.git
+cd dealflow
+2. Crie o ambiente virtual
+python -m venv venv
+source venv/bin/activate   # Linux/Mac
+venv\Scripts\activate      # Windows
 
-E instale a dependência necessária:
+3. Instale as dependências
+pip install -r requirements.txt
 
-```bash
-pip install openpyxl
-```
+4. Execute o servidor Flask
+python webapp/app.py
 
-### ▶️ Rodando a aplicação
 
-```bash
-python main.py
-```
+Acesse:
 
----
+http://localhost:5000
 
-## 📂 Estrutura Recomendada de Pastas
-
-```
-GestorPropostas/
+📂 Estrutura do Projeto
+dealflow/
 │
-├── relatorios/             # Excel gerado automaticamente
-├── main.py                 # Arquivo principal
-├── README.md               # Documentação do projeto
-
-```
----
-
-## 📝 Possíveis Melhorias Futuras
-
-* 💾 Persistência de dados (SQLite ou JSON)
-* 🌐 Versão web com Flask ou Django
-* 🎨 Estilização avançada da interface
-* 🧮 Cálculo de impostos ou margens
-* 📤 Exportação da proposta em PDF
-
+├── gestor_propostas/
+│   ├── models.py
+│   ├── storage.py
+│   ├── excel_report.py
+│   ├── pdf_report.py
+│   ├── auth.py
+│   └── __init__.py
+│
+├── webapp/
+│   ├── app.py
+│   ├── templates/
+│   │   ├── base.html
+│   │   ├── login.html
+│   │   ├── register.html
+│   │   ├── index.html
+│   │   ├── nova_proposta.html
+│   │   ├── proposta_detalhe.html
+│   │   └── clientes.html
+│   └── static/ (caso adicione CSS/JS)
+│
+├── README.md
