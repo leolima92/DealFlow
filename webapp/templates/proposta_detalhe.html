@@ -24,10 +24,14 @@
           <strong>Responsável:</strong> {{ proposta.responsavel }}
         </p>
       {% endif %}
+      {% if proposta.condicoes_pagamento %}
+        <p class="mb-0 text-muted">
+          <strong>Pagamento:</strong> {{ proposta.condicoes_pagamento }}
+        </p>
+      {% endif %}
     </div>
 
     <div class="d-flex flex-column flex-md-row gap-2">
-      <!-- Botão enviar proposta -->
       <form method="post"
             action="{{ url_for('enviar_proposta', pid=proposta.id) }}"
             onsubmit="return confirm('Confirmar envio da Proposta #{{ proposta.id }}?');">
@@ -38,7 +42,6 @@
         </button>
       </form>
 
-      <!-- (opcional) Botões de PDF/Excel -->
       <a href="{{ url_for('download_pdf', pid=proposta.id) }}"
          class="btn btn-outline-secondary">
         Baixar PDF
@@ -161,6 +164,58 @@
         <div class="col-md-4 d-grid">
           <label class="form-label">&nbsp;</label>
           <button type="submit" class="btn btn-primary">Aplicar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pagamento -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Condições de pagamento</h2>
+
+      {% if proposta.condicoes_pagamento %}
+        <p class="mb-3">
+          <strong>Atual:</strong> {{ proposta.condicoes_pagamento }}
+        </p>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('atualizar_pagamento', pid=proposta.id) }}" class="row g-2">
+        <div class="col-md-4">
+          <label class="form-label">Forma de pagamento</label>
+          <select name="forma_pagamento" class="form-select">
+            <option value="">Selecione...</option>
+            <option>PIX</option>
+            <option>Boleto</option>
+            <option>Cartão de crédito</option>
+            <option>Cartão de débito</option>
+            <option>Transferência</option>
+            <option>Dinheiro</option>
+            <option>Outro</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Parcelas</label>
+          <input type="number"
+                 min="1"
+                 name="num_parcelas"
+                 class="form-control"
+                 placeholder="Ex: 3">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Observações</label>
+          <input type="text"
+                 name="pagamento_obs"
+                 class="form-control"
+                 placeholder="Ex: entrada + saldo em 30 dias">
+        </div>
+
+        <div class="col-12 mt-2 d-grid d-md-flex justify-content-md-end">
+          <button type="submit" class="btn btn-primary">
+            Atualizar pagamento
+          </button>
         </div>
       </form>
     </div>

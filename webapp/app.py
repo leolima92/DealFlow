@@ -167,7 +167,6 @@ def proposta_detalhe(pid: int):
 @app.route("/propostas/nova", methods=["GET", "POST"])
 @login_required
 def nova_proposta():
-    """Criação de uma nova proposta."""
     clientes = gestor.listar_clientes()
 
     if not clientes:
@@ -179,7 +178,10 @@ def nova_proposta():
         titulo = request.form.get("titulo", "").strip()
         responsavel = request.form.get("responsavel", "").strip()
         validade_str = request.form.get("validade", "").strip()
-        cond_pag = request.form.get("condicoes_pagamento", "").strip()
+
+        forma_pagamento = request.form.get("forma_pagamento", "").strip()
+        num_parcelas = request.form.get("num_parcelas", "").strip()
+        pagamento_obs = request.form.get("pagamento_obs", "").strip()
 
         cliente = next((c for c in clientes if c.id == cliente_id), None)
         if not cliente:
@@ -193,6 +195,15 @@ def nova_proposta():
             except ValueError:
                 flash("Data de validade inválida. Use AAAA-MM-DD.", "error")
                 return redirect(url_for("nova_proposta"))
+
+        cond_parts = []
+        if forma_pagamento:
+            cond_parts.append(f"Forma: {forma_pagamento}")
+        if num_parcelas:
+            cond_parts.append(f"Parcelas: {num_parcelas}x")
+        if pagamento_obs:
+            cond_parts.append(f"Obs: {pagamento_obs}")
+        cond_pag = " | ".join(cond_parts)
 
         prop = gestor.criar_proposta(
             cliente,
@@ -282,6 +293,34 @@ def aplicar_desconto(pid: int):
     StorageManager.salvar_ou_atualizar_proposta(proposta)
     flash(msg, "success")
     return redirect(url_for("proposta_detalhe", pid=pid))
+
+@app.route("/propostas/<int:pid>/pagamento", methods=["POST"])
+@login_required
+def atualizar_pagamento(pid: int):
+    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    if not proposta:
+        flash("Proposta não encontrada.", "error")
+        return redirect(url_for("index"))
+
+    forma_pagamento = request.form.get("forma_pagamento", "").strip()
+    num_parcelas = request.form.get("num_parcelas", "").strip()
+    pagamento_obs = request.form.get("pagamento_obs", "").strip()
+
+    cond_parts = []
+    if forma_pagamento:
+        cond_parts.append(f"Forma: {forma_pagamento}")
+    if num_parcelas:
+        cond_parts.append(f"Parcelas: {num_parcelas}x")
+    if pagamento_obs:
+        cond_parts.append(f"Obs: {pagamento_obs}")
+    cond_pag = " | ".join(cond_parts)
+
+    proposta.condicoes_pagamento = cond_pag
+    StorageManager.salvar_ou_atualizar_proposta(proposta)
+
+    flash("Condições de pagamento atualizadas.", "success")
+    return redirect(url_for("proposta_detalhe", pid=pid))
+
 
 
 @app.route("/propostas/<int:pid>/excluir", methods=["POST"])

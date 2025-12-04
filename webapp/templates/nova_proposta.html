@@ -1,42 +1,68 @@
-<!-- webapp/templates/nova_proposta.html -->
 {% extends "base.html" %}
 
-{% block title %}Nova Proposta{% endblock %}
+{% block title %}Nova Proposta - Gestor de Propostas{% endblock %}
 
 {% block content %}
   <h1 class="h3 mb-3">Nova Proposta</h1>
 
-  <form method="post">
-    <div class="mb-3">
-      <label for="cliente_id" class="form-label">Cliente</label>
-      <select name="cliente_id" id="cliente_id" class="form-select" required>
+  <form method="post" class="row g-3">
+    <!-- Cliente e informações básicas -->
+    <div class="col-md-6">
+      <label class="form-label">Cliente</label>
+      <select name="cliente_id" class="form-select" required>
         {% for c in clientes %}
-          <option value="{{ c.id }}">{{ c.nome }} ({{ c.documento }})</option>
+          <option value="{{ c.id }}">{{ c.nome }}</option>
         {% endfor %}
       </select>
     </div>
 
-    <div class="mb-3">
-      <label for="titulo" class="form-label">Título da proposta</label>
-      <input type="text" class="form-control" id="titulo" name="titulo">
+    <div class="col-md-6">
+      <label class="form-label">Título da proposta (opcional)</label>
+      <input type="text" name="titulo" class="form-control">
     </div>
 
-    <div class="mb-3">
-      <label for="responsavel" class="form-label">Responsável</label>
-      <input type="text" class="form-control" id="responsavel" name="responsavel">
+    <div class="col-md-6">
+      <label class="form-label">Responsável (opcional)</label>
+      <input type="text" name="responsavel" class="form-control">
     </div>
 
-    <div class="mb-3">
-      <label for="validade" class="form-label">Validade (AAAA-MM-DD)</label>
-      <input type="text" class="form-control" id="validade" name="validade" placeholder="2025-12-31">
+    <div class="col-md-3">
+      <label class="form-label">Validade (AAAA-MM-DD) [opcional]</label>
+      <input type="text" name="validade" class="form-control" placeholder="2025-12-31">
     </div>
 
-    <div class="mb-3">
-      <label for="condicoes_pagamento" class="form-label">Condições de pagamento</label>
-      <input type="text" class="form-control" id="condicoes_pagamento" name="condicoes_pagamento">
+    <!-- Bloco de pagamento -->
+    <div class="col-12 mt-3">
+      <h2 class="h5 mb-2">Condições de pagamento</h2>
     </div>
 
-    <button type="submit" class="btn btn-primary">Criar Proposta</button>
-    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Cancelar</a>
+    <div class="col-md-4">
+      <label class="form-label">Forma de pagamento</label>
+      <select name="forma_pagamento" class="form-select">
+        <option value="">Selecione...</option>
+        <option>PIX</option>
+        <option>Boleto</option>
+        <option>Cartão de crédito</option>
+        <option>Cartão de débito</option>
+        <option>Transferência</option>
+        <option>Dinheiro</option>
+        <option>Outro</option>
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label">Parcelas</label>
+      <input type="number" min="1" name="num_parcelas" class="form-control" placeholder="Ex: 3">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Observações (opcional)</label>
+      <input type="text" name="pagamento_obs" class="form-control" placeholder="Ex: entrada + saldo em 30 dias">
+    </div>
+
+    <div class="col-12 mt-3">
+      <button type="submit" class="btn btn-primary">Criar proposta</button>
+      <a href="{{ url_for('index') }}" class="btn btn-outline-secondary ms-2">Cancelar</a>
+    </div>
   </form>
 {% endblock %}
