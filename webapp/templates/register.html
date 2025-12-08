@@ -1,54 +1,29 @@
 {% extends "base.html" %}
-
-{% block title %}Cadastro - Gestor de Propostas{% endblock %}
+{% block title %}Cadastrar - Deal Flow{% endblock %}
 
 {% block content %}
-  <div class="row justify-content-center">
-    <div class="col-md-4">
-      <h1 class="h4 mb-3 text-center">Criar conta</h1>
-
-      <form method="post">
-        <div class="mb-3">
-          <label class="form-label" for="username">Usuário</label>
-          <input
-            type="text"
-            class="form-control"
-            id="username"
-            name="username"
-            required
-          >
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label" for="password">Senha</label>
-          <input
-            type="password"
-            class="form-control"
-            id="password"
-            name="password"
-            required
-          >
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label" for="confirm">Confirmar senha</label>
-          <input
-            type="password"
-            class="form-control"
-            id="confirm"
-            name="confirm"
-            required
-          >
-        </div>
-
-        <div class="d-grid mb-2">
-          <button type="submit" class="btn btn-primary">Cadastrar</button>
-        </div>
-
-        <div class="text-center mt-2">
-          <a href="{{ url_for('login') }}">Já tenho conta</a>
-        </div>
-      </form>
+<div class="row justify-content-center">
+  <div class="col-md-4">
+    <div class="card bg-black text-light border-secondary">
+      <div class="card-body">
+        <h1 class="h4 mb-3 text-center">Criar conta</h1>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">Usuário</label>
+            <input type="text" name="username" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Senha</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Confirmar senha</label>
+            <input type="password" name="confirm_password" class="form-control" required>
+          </div>
+          <button class="btn btn-primary w-100" type="submit">Registrar</button>
+        </form>
+      </div>
     </div>
   </div>
+</div>
 {% endblock %}

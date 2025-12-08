@@ -2,15 +2,12 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
 
-from .models import Proposta
+from ..models import Proposta
 
 
 class PdfReportGenerator:
     @classmethod
     def gerar_pdf_proposta(cls, proposta: Proposta, caminho: str):
-        """
-        Gera um PDF simples com os dados da proposta e seus itens.
-        """
         c = canvas.Canvas(caminho, pagesize=A4)
         largura, altura = A4
 

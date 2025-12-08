@@ -1,0 +1,240 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+                 sans-serif;
+    line-height: 1.5;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+body[data-theme="light"] {
+    background-color: #f5f5f7;
+    color: #212529;
+}
+
+body[data-theme="dark"] {
+    background-color: #050509;
+    color: #f8f9fa;
+}
+
+main.container {
+    max-width: 1200px;
+}
+
+
+.navbar-dealflow {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+}
+
+
+body[data-theme="light"] .navbar-dealflow {
+    background-color: #ffffff;
+    color: #212529;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme="dark"] .navbar-dealflow {
+    background-color: #050509;
+    color: #f8f9fa;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body[data-theme="light"] .navbar-dealflow .navbar-brand,
+body[data-theme="light"] .navbar-dealflow .nav-link,
+body[data-theme="light"] .navbar-dealflow .navbar-text {
+    color: #212529;
+}
+
+body[data-theme="dark"] .navbar-dealflow .navbar-brand,
+body[data-theme="dark"] .navbar-dealflow .nav-link,
+body[data-theme="dark"] .navbar-dealflow .navbar-text {
+    color: #f8f9fa;
+}
+
+.navbar-dealflow .nav-link.active,
+.navbar-dealflow .nav-link:hover {
+    text-decoration: underline;
+}
+
+.navbar-logo {
+    height: 52px;
+    width: auto;
+    display: block;
+}
+
+#theme-toggle .theme-icon {
+    font-size: 1rem;
+}
+
+
+h1, h2, h3, h4 {
+    font-weight: 600;
+}
+
+
+.card {
+    border-radius: 0.75rem;
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+
+body[data-theme="light"] .card {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
+}
+
+
+body[data-theme="dark"] .card {
+    background-color: #111119 !important;
+    color: #f8f9fa !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+.card-title {
+    font-weight: 600;
+}
+
+
+.btn {
+    border-radius: 999px;
+    font-weight: 500;
+    padding-inline: 1rem;
+}
+
+body[data-theme="light"] .card .btn-outline-light,
+body[data-theme="light"] .card .btn-outline-secondary {
+    color: #212529;
+    border-color: #212529;
+}
+
+body[data-theme="light"] .card .btn-outline-light:hover,
+body[data-theme="light"] .card .btn-outline-secondary:hover {
+    background-color: #212529;
+    color: #ffffff;
+}
+
+body[data-theme="dark"] .card .btn-outline-light,
+body[data-theme="dark"] .card .btn-outline-secondary {
+    color: #f8f9fa;
+    border-color: #f8f9fa;
+}
+
+body[data-theme="dark"] .card .btn-outline-light:hover,
+body[data-theme="dark"] .card .btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+    color: #111119;
+}
+
+.btn-primary {
+    border-radius: 999px;
+}
+
+
+.table {
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+/* Modo claro */
+body[data-theme="light"] .table {
+    color: #212529;
+    background-color: #ffffff;
+}
+
+body[data-theme="light"] .table thead {
+    background-color: #f1f3f5;
+}
+
+body[data-theme="dark"] .table {
+    color: #f8f9fa;
+    background-color: #111119;
+}
+
+body[data-theme="dark"] .table thead {
+    background-color: #1e1e28;
+}
+
+.form-control,
+.form-select {
+    border-radius: 0.5rem;
+}
+
+/* Claro */
+body[data-theme="light"] .form-control,
+body[data-theme="light"] .form-select {
+    background-color: #ffffff;
+    color: #212529;
+    border-color: rgba(0, 0, 0, 0.16);
+}
+
+body[data-theme="light"] .form-control:focus,
+body[data-theme="light"] .form-select:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 0.15rem rgba(79, 70, 229, 0.16);
+}
+
+/* Escuro */
+body[data-theme="dark"] .form-control,
+body[data-theme="dark"] .form-select {
+    background-color: #050509;
+    color: #f8f9fa;
+    border-color: rgba(255, 255, 255, 0.24);
+}
+
+body[data-theme="dark"] .form-control:focus,
+body[data-theme="dark"] .form-select:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 0.15rem rgba(139, 92, 246, 0.4);
+}
+
+
+::placeholder {
+    opacity: 0.7;
+}
+
+
+.alert {
+    border-radius: 0.75rem;
+}
+
+body[data-theme="dark"] .alert {
+    color: #f8f9fa;
+}
+
+.section-divider {
+    height: 1px;
+    background: linear-gradient(
+        to right,
+        transparent,
+        rgba(148, 163, 184, 0.6),
+        transparent
+    );
+    margin: 1.5rem 0;
+}
+
+.text-muted-soft {
+    color: rgba(148, 163, 184, 0.9) !important;
+}

@@ -1,227 +1,126 @@
 {% extends "base.html" %}
-
-{% block title %}Proposta #{{ proposta.id }} - Gestor de Propostas{% endblock %}
+{% block title %}Proposta #{{ proposta.id }} - Deal Flow{% endblock %}
 
 {% block content %}
-  <!-- Cabeçalho da proposta -->
-  <div class="d-flex justify-content-between align-items-start mb-3">
-    <div>
-      <h1 class="h4 mb-1">
-        Proposta #{{ proposta.id }} - {{ proposta.titulo }}
-      </h1>
-      <p class="mb-1">
-        <strong>Cliente:</strong> {{ proposta.cliente.nome }}
-        | <strong>Status:</strong> {{ proposta.status }}
-        | <strong>Total:</strong> R$ {{ "%.2f"|format(proposta.calcular_total()) }}
-      </p>
-      {% if proposta.validade %}
-        <p class="mb-0 text-muted">
-          <strong>Validade:</strong> {{ proposta.validade.strftime("%d/%m/%Y") }}
-        </p>
-      {% endif %}
-      {% if proposta.responsavel %}
-        <p class="mb-0 text-muted">
-          <strong>Responsável:</strong> {{ proposta.responsavel }}
-        </p>
-      {% endif %}
-      {% if proposta.condicoes_pagamento %}
-        <p class="mb-0 text-muted">
-          <strong>Pagamento:</strong> {{ proposta.condicoes_pagamento }}
-        </p>
-      {% endif %}
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Proposta #{{ proposta.id }}</h1>
+  <a href="{{ url_for('ui.listar_propostas') }}" class="btn btn-secondary btn-sm">
+    Voltar
+  </a>
+</div>
 
-    <div class="d-flex flex-column flex-md-row gap-2">
-      <form method="post"
-            action="{{ url_for('enviar_proposta', pid=proposta.id) }}"
-            onsubmit="return confirm('Confirmar envio da Proposta #{{ proposta.id }}?');">
-        <button type="submit"
-                class="btn btn-primary"
-                {% if proposta.status in ['enviada','aceita','recusada','cancelada'] %}disabled{% endif %}>
-          Enviar proposta
-        </button>
-      </form>
-
-      <a href="{{ url_for('download_pdf', pid=proposta.id) }}"
-         class="btn btn-outline-secondary">
-        Baixar PDF
-      </a>
-      <a href="{{ url_for('download_excel', pid=proposta.id) }}"
-         class="btn btn-outline-secondary">
-        Exportar Excel
-      </a>
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card bg-black text-light border-secondary h-100">
+      <div class="card-body">
+        <h5 class="card-title">{{ proposta.titulo }}</h5>
+        <p class="mb-1"><strong>Cliente:</strong> {{ proposta.cliente.nome }}</p>
+        <p class="mb-1"><strong>Status:</strong> {{ proposta.status }}</p>
+        <p class="mb-1">
+          <strong>Abertura:</strong> {{ proposta.data_criacao.strftime("%d/%m/%Y") }}
+        </p>
+        <p class="mb-1">
+          <strong>Validade:</strong>
+          {% if proposta.validade %}
+            {{ proposta.validade.strftime("%d/%m/%Y") }}
+          {% else %}-{% endif %}
+        </p>
+        <p class="mb-1"><strong>Responsável:</strong> {{ proposta.responsavel or "-" }}</p>
+        <p class="mb-0">
+          <strong>Condições de pagamento:</strong>
+          {{ proposta.condicoes_pagamento or "-" }}
+        </p>
+      </div>
     </div>
   </div>
 
-  <!-- Itens -->
-  <h2 class="h5 mt-4">Itens</h2>
+  <div class="col-md-6">
+    <div class="card bg-black text-light border-secondary h-100">
+      <div class="card-body">
+        <h5 class="card-title">Resumo financeiro</h5>
+        <p class="mb-1">
+          <strong>Subtotal:</strong>
+          R$ {{ "%.2f"|format(proposta.calcular_subtotal()) }}
+        </p>
+        <p class="mb-1">
+          <strong>Desconto:</strong>
+          {% if proposta.tipo_desconto == "%" %}
+            {{ "%.2f"|format(proposta.desconto_percentual) }}%
+          {% elif proposta.tipo_desconto == "R" %}
+            R$ {{ "%.2f"|format(proposta.desconto_valor) }}
+          {% else %}
+            -
+          {% endif %}
+        </p>
+        <p class="mb-3">
+          <strong>Total:</strong>
+          R$ {{ "%.2f"|format(proposta.calcular_total()) }}
+        </p>
 
-  {% if proposta.itens %}
-    <table class="table table-striped table-hover align-middle mb-4">
+        <h6 class="mb-2">Alterar status</h6>
+        <form method="post" action="{{ url_for('ui.alterar_status', proposta_id=proposta.id) }}" class="row g-2 mb-3">
+          <div class="col-8">
+            <select name="status" class="form-select form-select-sm">
+              {% for st in proposta.STATUS_VALIDOS %}
+                <option value="{{ st }}" {% if proposta.status == st %}selected{% endif %}>
+                  {{ st }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-4">
+            <button class="btn btn-outline-light btn-sm w-100" type="submit">Atualizar</button>
+          </div>
+        </form>
+
+        <h6 class="mb-2">Desconto</h6>
+        <form method="post" action="{{ url_for('ui.aplicar_desconto', proposta_id=proposta.id) }}" class="row g-2">
+          <div class="col-4">
+            <select name="tipo" class="form-select form-select-sm">
+              <option value="nenhum">Nenhum</option>
+              <option value="%" {% if proposta.tipo_desconto == "%" %}selected{% endif %}>Percentual</option>
+              <option value="R" {% if proposta.tipo_desconto == "R" %}selected{% endif %}>Valor</option>
+            </select>
+          </div>
+          <div class="col-4">
+            <input type="text" name="valor" class="form-control form-control-sm"
+                   placeholder="0,00">
+          </div>
+          <div class="col-4">
+            <button class="btn btn-outline-light btn-sm w-100" type="submit">Aplicar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="h5 mb-2">Itens da proposta</h2>
+{% if proposta.itens %}
+  <div class="table-responsive">
+    <table class="table table-dark table-sm align-middle">
       <thead>
         <tr>
           <th>Descrição</th>
-          <th class="text-end">Qtd</th>
-          <th class="text-end">Unitário</th>
-          <th class="text-end">Total</th>
+          <th style="width: 80px;">Qtd</th>
+          <th style="width: 130px;">Unitário (R$)</th>
+          <th style="width: 130px;">Total (R$)</th>
         </tr>
       </thead>
       <tbody>
         {% for item in proposta.itens %}
           <tr>
             <td>{{ item.descricao }}</td>
-            <td class="text-end">{{ item.quantidade }}</td>
-            <td class="text-end">R$ {{ "%.2f"|format(item.valor_unitario) }}</td>
-            <td class="text-end">R$ {{ "%.2f"|format(item.total) }}</td>
+            <td>{{ item.quantidade }}</td>
+            <td>{{ "%.2f"|format(item.valor_unitario) }}</td>
+            <td>{{ "%.2f"|format(item.total) }}</td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
-  {% else %}
-    <p>Nenhum item adicionado ainda.</p>
-  {% endif %}
-
-  <!-- Adicionar item -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <h2 class="h5 mb-3">Adicionar item</h2>
-      <form method="post" action="{{ url_for('add_item', pid=proposta.id) }}" class="row g-2">
-        <div class="col-md-6">
-          <input type="text"
-                 name="descricao"
-                 class="form-control"
-                 placeholder="Descrição"
-                 required>
-        </div>
-        <div class="col-md-2">
-          <input type="number"
-                 name="quantidade"
-                 class="form-control"
-                 placeholder="Qtd"
-                 min="1"
-                 required>
-        </div>
-        <div class="col-md-2">
-          <input type="text"
-                 name="valor_unitario"
-                 class="form-control"
-                 placeholder="Valor (R$)"
-                 required>
-        </div>
-        <div class="col-md-2 d-grid">
-          <button type="submit" class="btn btn-primary">Adicionar</button>
-        </div>
-      </form>
-    </div>
   </div>
+{% else %}
+  <p class="text-muted">Nenhum item cadastrado para esta proposta.</p>
+{% endif %}
 
-  <!-- Desconto -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <h2 class="h5 mb-3">Desconto</h2>
-
-      <p class="mb-1">
-        Subtotal:
-        <strong>R$ {{ "%.2f"|format(proposta.calcular_subtotal()) }}</strong>
-      </p>
-      <p class="mb-1">
-        Desconto atual:
-        {% if proposta.tipo_desconto == '%' %}
-          <strong>{{ "%.2f"|format(proposta.desconto_percentual) }}%</strong>
-        {% elif proposta.tipo_desconto == 'R' %}
-          <strong>R$ {{ "%.2f"|format(proposta.desconto_valor) }}</strong>
-        {% else %}
-          <strong>Nenhum</strong>
-        {% endif %}
-      </p>
-      <p class="mb-3">
-        Total com desconto:
-        <strong>R$ {{ "%.2f"|format(proposta.calcular_total()) }}</strong>
-      </p>
-
-      <form method="post" action="{{ url_for('aplicar_desconto', pid=proposta.id) }}" class="row g-2 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label">Tipo</label>
-          <select name="tipo" class="form-select">
-            <option value="nenhum">Nenhum</option>
-            <option value="%" {% if proposta.tipo_desconto == '%' %}selected{% endif %}>
-              Percentual (%)
-            </option>
-            <option value="R" {% if proposta.tipo_desconto == 'R' %}selected{% endif %}>
-              Valor (R$)
-            </option>
-          </select>
-        </div>
-
-        <div class="col-md-5">
-          <label class="form-label">Valor</label>
-          <input type="text"
-                 name="valor"
-                 class="form-control"
-                 placeholder="Ex: 10 ou 150,00">
-        </div>
-
-        <div class="col-md-4 d-grid">
-          <label class="form-label">&nbsp;</label>
-          <button type="submit" class="btn btn-primary">Aplicar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Pagamento -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <h2 class="h5 mb-3">Condições de pagamento</h2>
-
-      {% if proposta.condicoes_pagamento %}
-        <p class="mb-3">
-          <strong>Atual:</strong> {{ proposta.condicoes_pagamento }}
-        </p>
-      {% endif %}
-
-      <form method="post" action="{{ url_for('atualizar_pagamento', pid=proposta.id) }}" class="row g-2">
-        <div class="col-md-4">
-          <label class="form-label">Forma de pagamento</label>
-          <select name="forma_pagamento" class="form-select">
-            <option value="">Selecione...</option>
-            <option>PIX</option>
-            <option>Boleto</option>
-            <option>Cartão de crédito</option>
-            <option>Cartão de débito</option>
-            <option>Transferência</option>
-            <option>Dinheiro</option>
-            <option>Outro</option>
-          </select>
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">Parcelas</label>
-          <input type="number"
-                 min="1"
-                 name="num_parcelas"
-                 class="form-control"
-                 placeholder="Ex: 3">
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label">Observações</label>
-          <input type="text"
-                 name="pagamento_obs"
-                 class="form-control"
-                 placeholder="Ex: entrada + saldo em 30 dias">
-        </div>
-
-        <div class="col-12 mt-2 d-grid d-md-flex justify-content-md-end">
-          <button type="submit" class="btn btn-primary">
-            Atualizar pagamento
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <a href="{{ url_for('index') }}" class="btn btn-link">
-    Voltar para a lista de propostas
-  </a>
 {% endblock %}

@@ -1,68 +1,119 @@
 {% extends "base.html" %}
-
-{% block title %}Nova Proposta - Gestor de Propostas{% endblock %}
+{% block title %}Nova Proposta - Deal Flow{% endblock %}
 
 {% block content %}
-  <h1 class="h3 mb-3">Nova Proposta</h1>
+<h1 class="h4 mb-3">Nova proposta</h1>
 
-  <form method="post" class="row g-3">
-    <!-- Cliente e informações básicas -->
+<form method="post" class="card bg-black text-light border-secondary p-3">
+  <div class="row mb-3">
     <div class="col-md-6">
-      <label class="form-label">Cliente</label>
+      <label class="form-label">Cliente *</label>
       <select name="cliente_id" class="form-select" required>
         {% for c in clientes %}
           <option value="{{ c.id }}">{{ c.nome }}</option>
         {% endfor %}
       </select>
     </div>
-
     <div class="col-md-6">
-      <label class="form-label">Título da proposta (opcional)</label>
+      <label class="form-label">Título (opcional)</label>
       <input type="text" name="titulo" class="form-control">
     </div>
+  </div>
 
+  <div class="row mb-3">
     <div class="col-md-6">
       <label class="form-label">Responsável (opcional)</label>
       <input type="text" name="responsavel" class="form-control">
     </div>
-
     <div class="col-md-3">
-      <label class="form-label">Validade (AAAA-MM-DD) [opcional]</label>
+      <label class="form-label">Validade (AAAA-MM-DD)</label>
       <input type="text" name="validade" class="form-control" placeholder="2025-12-31">
     </div>
-
-    <!-- Bloco de pagamento -->
-    <div class="col-12 mt-3">
-      <h2 class="h5 mb-2">Condições de pagamento</h2>
+    <div class="col-md-3">
+      <label class="form-label">Condições de pagamento</label>
+      <input type="text" name="condicoes_pagamento" class="form-control">
     </div>
+  </div>
 
-    <div class="col-md-4">
-      <label class="form-label">Forma de pagamento</label>
-      <select name="forma_pagamento" class="form-select">
-        <option value="">Selecione...</option>
-        <option>PIX</option>
-        <option>Boleto</option>
-        <option>Cartão de crédito</option>
-        <option>Cartão de débito</option>
-        <option>Transferência</option>
-        <option>Dinheiro</option>
-        <option>Outro</option>
-      </select>
-    </div>
+  <hr>
 
-    <div class="col-md-2">
-      <label class="form-label">Parcelas</label>
-      <input type="number" min="1" name="num_parcelas" class="form-control" placeholder="Ex: 3">
-    </div>
+  <h2 class="h5 mb-3">Itens da proposta</h2>
 
-    <div class="col-md-6">
-      <label class="form-label">Observações (opcional)</label>
-      <input type="text" name="pagamento_obs" class="form-control" placeholder="Ex: entrada + saldo em 30 dias">
-    </div>
+  <div class="table-responsive mb-2">
+    <table class="table table-dark table-sm align-middle" id="tabela-itens">
+      <thead>
+        <tr>
+          <th>Descrição</th>
+          <th style="width: 90px;">Qtd</th>
+          <th style="width: 140px;">Valor unitário (R$)</th>
+          <th style="width: 40px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <input type="text" name="item_descricao" class="form-control" required>
+          </td>
+          <td>
+            <input type="number" name="item_qtd" class="form-control" value="1" min="1">
+          </td>
+          <td>
+            <input type="text" name="item_valor" class="form-control" placeholder="0,00">
+          </td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-item">&times;</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
-    <div class="col-12 mt-3">
-      <button type="submit" class="btn btn-primary">Criar proposta</button>
-      <a href="{{ url_for('index') }}" class="btn btn-outline-secondary ms-2">Cancelar</a>
-    </div>
-  </form>
+  <button type="button" class="btn btn-outline-light btn-sm mb-3" id="btn-add-item">
+    + Adicionar item
+  </button>
+
+  <div class="d-flex justify-content-end">
+    <button class="btn btn-primary" type="submit">Criar proposta</button>
+    <a href="{{ url_for('ui.listar_propostas') }}" class="btn btn-secondary ms-2">Cancelar</a>
+  </div>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const tabela = document.querySelector("#tabela-itens tbody");
+  const btnAdd = document.querySelector("#btn-add-item");
+
+  function bindRemoveButtons() {
+    document.querySelectorAll(".btn-remove-item").forEach(btn => {
+      btn.onclick = function () {
+        const row = this.closest("tr");
+        const totalRows = tabela.querySelectorAll("tr").length;
+        if (totalRows > 1) {
+          row.remove();
+        } else {
+          // limpa ao invés de remover a última linha
+          row.querySelectorAll("input").forEach(i => i.value = "");
+          row.querySelector('input[name="item_qtd"]').value = 1;
+        }
+      };
+    });
+  }
+
+  btnAdd.addEventListener("click", function () {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><input type="text" name="item_descricao" class="form-control" required></td>
+      <td><input type="number" name="item_qtd" class="form-control" value="1" min="1"></td>
+      <td><input type="text" name="item_valor" class="form-control" placeholder="0,00"></td>
+      <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-item">&times;</button>
+      </td>
+    `;
+    tabela.appendChild(row);
+    bindRemoveButtons();
+  });
+
+  bindRemoveButtons();
+});
+</script>
 {% endblock %}

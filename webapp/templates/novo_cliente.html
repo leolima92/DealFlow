@@ -1,27 +1,26 @@
 {% extends "base.html" %}
-
-{% block title %}Novo Cliente{% endblock %}
+{% block title %}Novo Cliente - Deal Flow{% endblock %}
 
 {% block content %}
-  <h1 class="h3 mb-3">Novo Cliente</h1>
+<h1 class="h4 mb-3">Novo cliente</h1>
 
-  <form method="post">
-    <div class="mb-3">
-      <label for="nome" class="form-label">Nome</label>
-      <input type="text" class="form-control" id="nome" name="nome" required>
-    </div>
+<form method="post" class="card bg-black text-light border-secondary p-3">
+  <div class="mb-3">
+    <label class="form-label">Nome *</label>
+    <input type="text" name="nome" class="form-control" required>
+  </div>
 
-    <div class="mb-3">
-      <label for="documento" class="form-label">Documento (opcional)</label>
-      <input type="text" class="form-control" id="documento" name="documento">
-    </div>
+  <div class="mb-3">
+    <label class="form-label">Documento (opcional)</label>
+    <input type="text" name="documento" class="form-control">
+  </div>
 
-    <div class="mb-3">
-      <label for="contato" class="form-label">Contato (opcional)</label>
-      <input type="text" class="form-control" id="contato" name="contato">
-    </div>
+  <div class="mb-3">
+    <label class="form-label">Contato (opcional)</label>
+    <input type="text" name="contato" class="form-control">
+  </div>
 
-    <button type="submit" class="btn btn-primary">Salvar</button>
-    <a href="{{ url_for('clientes') }}" class="btn btn-outline-secondary">Cancelar</a>
-  </form>
+  <button class="btn btn-primary" type="submit">Salvar</button>
+  <a href="{{ url_for('ui.listar_clientes') }}" class="btn btn-secondary ms-2">Cancelar</a>
+</form>
 {% endblock %}
