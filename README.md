@@ -67,16 +67,24 @@ DealFlow foi construído com:
 ```bash
 git clone https://github.com/seu-usuario/dealflow.git
 cd dealflow
-2. Crie o ambiente virtual
+```
+
+### 2. Crie o ambiente virtual
+```bash
 python -m venv venv
 source venv/bin/activate   # Linux/Mac
 venv\Scripts\activate      # Windows
+```
 
-3. Instale as dependências
+### 3. Instale as dependências
+```bash
 pip install -r requirements.txt
+```
 
-4. Execute o servidor Flask
+### 4. Execute o servidor Flask
+```bash
 python webapp/app.py
+```
 
 
 Acesse:
