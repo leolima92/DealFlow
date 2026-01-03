@@ -55,8 +55,10 @@ class LoginWindow(tk.Tk):
             messagebox.showwarning("Atenção", "Informe usuário e senha.")
             return
 
-        if AuthManager.validate_credentials(username, password):
-            self._user = User(username=username)
+        user = AuthManager.authenticate(username, password)
+
+        if user:
+            self._user = user
             self.destroy()
         else:
             messagebox.showerror("Erro", "Usuário ou senha inválidos.")
