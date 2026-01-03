@@ -94,6 +94,12 @@ class AuthManager:
         return cls.authenticate(username, password)
 
     @classmethod
+    def validate_credentials(cls, username: str, password: str) -> bool:
+        """Mantém compatibilidade com a UI desktop retornando apenas um booleano."""
+
+        return cls.authenticate(username, password) is not None
+
+    @classmethod
     def create_user(cls, username: str, password: str) -> Optional[User]:
         username = username.strip()
         if not username:
