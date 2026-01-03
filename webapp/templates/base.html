@@ -27,8 +27,11 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm df-navbar">
         <div class="container-fluid px-4">
 
-            <!-- MARCA (SEM LOGO, SÓ TEXTO) -->
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('ui.index') }}">
+            <!-- MARCA -->
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('ui.index') }}">
+                <img src="{{ url_for('static', filename='img/dealflow_logo.png') }}"
+                     alt="Deal Flow"
+                     class="df-logo df-logo-nav">
                 <span class="fw-semibold">Deal Flow</span>
             </a>
 
