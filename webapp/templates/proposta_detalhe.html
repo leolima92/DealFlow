@@ -6,7 +6,7 @@
     <div>
         <h1 class="h4 mb-0">Proposta #{{ proposta.id }}</h1>
         <p class="text-muted mb-0">
-            {{ proposta.titulo }} · Cliente: {{ proposta.cliente.nome }}
+            {{ proposta.titulo }} · Cliente: {{ proposta.cliente.nome if proposta.cliente else 'Cliente não encontrado' }}
         </p>
     </div>
     <div class="d-flex gap-2">
@@ -16,6 +16,11 @@
         <form method="post" action="{{ url_for('ui.enviar_proposta', pid=proposta.id) }}" class="d-inline">
             <button class="btn btn-sm btn-success" type="submit">
                 <i class="bi bi-send me-1"></i> Marcar como enviada
+            </button>
+        </form>
+        <form method="post" action="{{ url_for('ui.aprovar_proposta', pid=proposta.id) }}" class="d-inline">
+            <button class="btn btn-sm btn-primary" type="submit">
+                <i class="bi bi-check-circle me-1"></i> Aprovar proposta
             </button>
         </form>
         <form method="post" action="{{ url_for('ui.excluir_proposta', pid=proposta.id) }}"
@@ -87,20 +92,20 @@
                 <p class="mb-1">
                     <span class="text-muted">Subtotal:</span>
                     <strong class="float-end">
-                        R{{ " %0.2f"|format(proposta.calcular_subtotal())|replace(".", ",") }}
+                        R${{ " %0.2f"|format(proposta.calcular_subtotal())|replace(".", ",") }}
                     </strong>
                 </p>
                 <p class="mb-1">
                     <span class="text-muted">Desconto:</span>
                     <strong class="float-end">
-                        R{{ " %0.2f"|format(proposta.calcular_desconto())|replace(".", ",") }}
+                        R${{ " %0.2f"|format(proposta.calcular_desconto())|replace(".", ",") }}
                     </strong>
                 </p>
                 <hr>
                 <p class="mb-0">
                     <span class="text-muted">Total:</span>
                     <strong class="float-end">
-                        R{{ " %0.2f"|format(proposta.calcular_total())|replace(".", ",") }}
+                        R${{ " %0.2f"|format(proposta.calcular_total())|replace(".", ",") }}
                     </strong>
                 </p>
             </div>

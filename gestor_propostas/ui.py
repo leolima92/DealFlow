@@ -1,5 +1,6 @@
 from datetime import datetime
 from functools import wraps
+import logging
 
 from flask import (
     Blueprint,
@@ -21,6 +22,7 @@ from . import gestor  # instância global criada em __init__.py
 
 
 bp = Blueprint("ui", __name__)
+logger = logging.getLogger(__name__)
 
 
 # ========= helpers ========= #
@@ -55,6 +57,7 @@ def login():
         user = AuthManager.authenticate(username, password)
         if user:
             session["username"] = user.username
+            logger.info(f"Usuário '{user.username}' fez login com sucesso.")
             flash(f"Bem-vindo, {user.username}!", "success")
 
             next_page = request.args.get("next")
@@ -68,7 +71,9 @@ def login():
 @bp.route("/logout")
 @login_required
 def logout():
+    username = session.get("username")
     session.clear()
+    logger.info(f"Usuário '{username}' fez logout.")
     flash("Sessão encerrada.", "info")
     return redirect(url_for("ui.login"))
 
@@ -120,7 +125,7 @@ def index():
     if q:
         propostas = [
             p for p in propostas
-            if q in p.titulo.lower() or q in p.cliente.nome.lower()
+            if q in p.titulo.lower() or (p.cliente and q in p.cliente.nome.lower())
         ]
 
     statuses = sorted({p.status for p in todas_propostas})
@@ -129,6 +134,19 @@ def index():
     propostas_aceitas = [p for p in todas_propostas if p.status == "aceita"]
     qtd_aceitas = len(propostas_aceitas)
     valor_total_aceitas = sum(p.calcular_total() for p in propostas_aceitas)
+
+    # Dados para gráficos
+    from collections import Counter, defaultdict
+    status_counts = Counter(p.status for p in todas_propostas)
+    status_data = [{"status": k, "count": v} for k, v in status_counts.items()]
+
+    # Valor arrecadado por mês (para propostas aceitas)
+    arrecadacao_por_mes = defaultdict(float)
+    for p in propostas_aceitas:
+        if p.data_criacao:
+            mes_ano = p.data_criacao.strftime("%Y-%m")
+            arrecadacao_por_mes[mes_ano] += p.calcular_total()
+    arrecadacao_mes_data = [{"mes": k, "valor": v} for k, v in sorted(arrecadacao_por_mes.items())]
 
     return render_template(
         "index.html",
@@ -140,6 +158,8 @@ def index():
         total_clientes=total_clientes,
         qtd_aceitas=qtd_aceitas,
         valor_total_aceitas=valor_total_aceitas,
+        status_data=status_data,
+        arrecadacao_mes_data=arrecadacao_mes_data,
     )
 
 
@@ -151,6 +171,10 @@ def proposta_detalhe(pid: int):
     proposta = next((p for p in gestor.propostas if p.id == pid), None)
     if not proposta:
         flash("Proposta não encontrada.", "error")
+        return redirect(url_for("ui.index"))
+
+    if not proposta.cliente:
+        flash("Cliente da proposta não encontrado.", "error")
         return redirect(url_for("ui.index"))
 
     return render_template("proposta_detalhe.html", proposta=proposta)
@@ -208,6 +232,7 @@ def nova_proposta():
         StorageManager.salvar_ou_atualizar_proposta(prop)
         StorageManager.sincronizar_itens_proposta(prop)
 
+        logger.info(f"Proposta #{prop.id} criada por usuário '{session.get('username')}' para cliente '{cliente.nome}'.")
         flash(f"Proposta #{prop.id} criada com sucesso!", "success")
         return redirect(url_for("ui.proposta_detalhe", pid=prop.id))
 
@@ -337,6 +362,26 @@ def excluir_proposta(pid: int):
     return redirect(url_for("ui.index"))
 
 
+@bp.route("/propostas/<int:pid>/aprovar", methods=["POST"])
+@login_required
+def aprovar_proposta(pid: int):
+    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    if not proposta:
+        flash("Proposta não encontrada.", "error")
+        return redirect(url_for("ui.index"))
+
+    if proposta.status == "aceita":
+        flash(f"A Proposta #{pid} já está aceita.", "info")
+        return redirect(url_for("ui.index"))
+
+    proposta.alterar_status("aceita")
+    StorageManager.salvar_ou_atualizar_proposta(proposta)
+
+    logger.info(f"Proposta #{pid} aprovada por usuário '{session.get('username')}'.")
+    flash(f"Proposta #{pid} aprovada com sucesso!", "success")
+    return redirect(url_for("ui.index"))
+
+
 @bp.route("/propostas/<int:pid>/enviar", methods=["POST"])
 @login_required
 def enviar_proposta(pid: int):
@@ -345,14 +390,15 @@ def enviar_proposta(pid: int):
         flash("Proposta não encontrada.", "error")
         return redirect(url_for("ui.index"))
 
-    if proposta.status in ["enviada", "aceita", "recusada", "cancelada"]:
-        flash(f"A Proposta #{pid} já está com status '{proposta.status}'.", "info")
+    if proposta.status == "enviada":
+        flash(f"A Proposta #{pid} já foi enviada.", "info")
         return redirect(url_for("ui.index"))
 
     proposta.alterar_status("enviada")
     StorageManager.salvar_ou_atualizar_proposta(proposta)
 
-    flash(f"Proposta #{pid} marcada como 'enviada'.", "success")
+    logger.info(f"Proposta #{pid} marcada como enviada por usuário '{session.get('username')}'.")
+    flash(f"Proposta #{pid} marcada como enviada!", "success")
     return redirect(url_for("ui.index"))
 
 
@@ -386,6 +432,49 @@ def download_pdf(pid: int):
         tmp.name,
         as_attachment=True,
         download_name=f"proposta_{proposta.id}.pdf",
+    )
+
+
+# ========= propostas ========= #
+
+@bp.route("/propostas", endpoint="listar_propostas")
+@login_required
+def propostas_lista():
+    q = request.args.get("q", "").strip().lower()
+    status = request.args.get("status", "").strip()
+    page = request.args.get("page", 1, type=int)
+    per_page = 10
+
+    todas_propostas = gestor.listar_propostas()
+    propostas = todas_propostas
+
+    if status:
+        propostas = [p for p in propostas if p.status == status.lower()]
+
+    if q:
+        propostas = [
+            p for p in propostas
+            if q in p.titulo.lower() or (p.cliente and q in p.cliente.nome.lower()) or q in str(p.id)
+        ]
+
+    # paginação
+    total_propostas_filtradas = len(propostas)
+    start = (page - 1) * per_page
+    end = start + per_page
+    propostas_paginadas = propostas[start:end]
+    total_pages = (total_propostas_filtradas + per_page - 1) // per_page
+
+    statuses = sorted({p.status for p in todas_propostas}, key=str.lower)
+
+    return render_template(
+        "propostas.html",
+        propostas=propostas_paginadas,
+        filtro_q=q,
+        filtro_status=status,
+        statuses=statuses,
+        current_page=page,
+        total_pages=total_pages,
+        total_propostas=total_propostas_filtradas,
     )
 
 

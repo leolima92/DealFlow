@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Propostas - Deal Flow{% endblock %}
+{% block title %}Propostas · DealFlow{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -14,7 +14,7 @@
     <label class="form-label mb-0">Status</label>
     <select name="status" class="form-select form-select-sm">
       <option value="">Todos</option>
-      {% for st in ["rascunho", "enviada", "aceita", "recusada", "cancelada"] %}
+      {% for st in statuses %}
         <option value="{{ st }}" {% if filtro_status == st %}selected{% endif %}>
           {{ st }}
         </option>
@@ -23,7 +23,7 @@
   </div>
   <div class="col-md-5">
     <label class="form-label mb-0">Busca (cliente ou título)</label>
-    <input type="text" name="q" class="form-control form-control-sm" value="{{ busca or '' }}">
+    <input type="text" name="q" class="form-control form-control-sm" value="{{ filtro_q or '' }}">
   </div>
   <div class="col-md-4 d-flex align-items-end">
     <button class="btn btn-outline-light btn-sm me-2" type="submit">Filtrar</button>
@@ -63,7 +63,7 @@
                 -
               {% endif %}
             </td>
-            <td>R$ {{ "%.2f"|format(p.calcular_total()) }}</td>
+            <td>R$ {{ "%.2f"|format(p.calcular_total())|replace(".", ",") }}</td>
             <td class="text-end">
               <a href="{{ url_for('ui.detalhe_proposta', proposta_id=p.id) }}"
                  class="btn btn-sm btn-outline-light">
@@ -74,6 +74,40 @@
         {% endfor %}
       </tbody>
     </table>
+
+    <!-- paginação -->
+    {% if total_pages > 1 %}
+    <nav aria-label="Paginação de propostas">
+      <ul class="pagination justify-content-center mt-3">
+        {% if current_page > 1 %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('ui.listar_propostas', q=filtro_q, status=filtro_status, page=current_page-1) }}">Anterior</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">Anterior</span>
+        </li>
+        {% endif %}
+
+        {% for page_num in range(1, total_pages + 1) %}
+        <li class="page-item{% if page_num == current_page %} active{% endif %}">
+          <a class="page-link" href="{{ url_for('ui.listar_propostas', q=filtro_q, status=filtro_status, page=page_num) }}">{{ page_num }}</a>
+        </li>
+        {% endfor %}
+
+        {% if current_page < total_pages %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('ui.listar_propostas', q=filtro_q, status=filtro_status, page=current_page+1) }}">Próximo</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">Próximo</span>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+
   </div>
 {% else %}
   <p class="text-muted">Nenhuma proposta encontrada.</p>

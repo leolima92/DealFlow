@@ -1,4 +1,5 @@
 import os
+import logging
 from flask import Flask
 
 from .models import GestorPropostas
@@ -12,6 +13,21 @@ ROOT_DIR = os.path.dirname(PKG_DIR)
 
 TEMPLATE_DIR = os.path.join(ROOT_DIR, "webapp", "templates")
 STATIC_DIR = os.path.join(ROOT_DIR, "static")
+
+# === configuração de logging ===
+LOG_DIR = os.path.join(ROOT_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_FILE = os.path.join(LOG_DIR, "app.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding='utf-8'),
+        logging.StreamHandler()  # também para console
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # instância global do gestor (usada no ui.py)
 gestor = GestorPropostas()

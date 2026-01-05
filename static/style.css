@@ -5,6 +5,12 @@
     --df-surface: #f8f9fa;
     --df-border: #e3e3e3;
     --df-shadow-soft: 0 2px 4px rgba(0,0,0,0.06);
+    --df-primary: #7b2cbf;
+    --df-primary-hover: #6a1b9a;
+    --df-primary-soft: rgba(123, 44, 191, 0.1);
+    --df-radius-md: 8px;
+    --df-radius-lg: 12px;
+    --df-bg-elevated: #ffffff;
 }
 
 [data-theme="dark"] {
@@ -14,6 +20,10 @@
     --df-surface: #2c2c2e;
     --df-border: #3a3a3c;
     --df-shadow-soft: 0 2px 6px rgba(0,0,0,0.3);
+    --df-primary: #9c4dcc;
+    --df-primary-hover: #ab47bc;
+    --df-primary-soft: rgba(156, 77, 204, 0.1);
+    --df-bg-elevated: #2c2c2e;
 }
 
 /* Aplica variáveis */
@@ -61,10 +71,12 @@ body.df-body {
 
 a {
     text-decoration: none;
+    color: var(--df-text);
 }
 
 a:hover {
     text-decoration: underline;
+    color: var(--df-primary);
 }
 
 /* =========================================================
@@ -91,6 +103,13 @@ a:hover {
     font-size: 0.8rem;
     border-radius: 999px;
     padding-inline: 0.9rem;
+    background: var(--df-surface);
+    border-color: var(--df-border);
+    color: var(--df-text);
+}
+
+#themeToggle:hover {
+    background: var(--df-border);
 }
 
 /* =========================================================
@@ -156,6 +175,15 @@ a:hover {
 
 .df-auth-card h1 {
     font-weight: 600;
+    color: var(--df-text);
+}
+
+.form-label {
+    color: var(--df-text);
+}
+
+.text-muted {
+    color: var(--df-text-soft) !important;
 }
 
 /* =========================================================
@@ -194,9 +222,19 @@ a:hover {
     background: rgba(123, 44, 191, 0.18);
 }
 
-/* =========================================================
-   DASHBOARD — HEADER
-   ========================================================= */
+.df-chart-card {
+    background: var(--df-surface);
+    border: 1px solid var(--df-border);
+    border-radius: var(--df-radius-lg);
+    padding: 20px;
+    box-shadow: var(--df-shadow-soft);
+}
+
+.df-chart-card h5 {
+    color: var(--df-text);
+    margin-bottom: 15px;
+    font-weight: 600;
+}
 
 .dashboard-header h1 {
     font-weight: 600;
@@ -306,4 +344,11 @@ a:hover {
 
 .container.py-4 {
     padding-bottom: 3rem !important;
+}
+
+/* Sortable drag and drop */
+.sortable-ghost {
+    opacity: 0.4;
+    background: var(--df-primary-soft);
+    border: 2px dashed var(--df-primary);
 }

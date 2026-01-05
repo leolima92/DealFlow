@@ -20,13 +20,19 @@
                         <label class="form-label">Usuário</label>
                         <input type="text" name="username" class="form-control" required>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3 position-relative">
                         <label class="form-label">Senha</label>
-                        <input type="password" name="password" class="form-control" required>
+                        <input type="password" name="password" class="form-control" id="password" required style="padding-right: 40px;">
+                        <button type="button" id="togglePassword" style="position: absolute; right: 10px; top: 70%; transform: translateY(-50%); background: none; border: none; color: #6c757d; cursor: pointer;">
+                            <i class="bi bi-eye"></i>
+                        </button>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3 position-relative">
                         <label class="form-label">Confirmar senha</label>
-                        <input type="password" name="confirm" class="form-control" required>
+                        <input type="password" name="confirm" class="form-control" id="confirm" required style="padding-right: 40px;">
+                        <button type="button" id="toggleConfirm" style="position: absolute; right: 10px; top: 70%; transform: translateY(-50%); background: none; border: none; color: #6c757d; cursor: pointer;">
+                            <i class="bi bi-eye"></i>
+                        </button>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100">

@@ -3,16 +3,56 @@
 
 {% block content %}
 
-<div class="dashboard-header mb-4">
-    <h1>Dashboard</h1>
-    <p>Visão geral das suas propostas e clientes.</p>
+<div class="dashboard-header mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h1>Dashboard</h1>
+        <p>Visão geral das suas propostas e clientes.</p>
+    </div>
+    <button id="customizeBtn" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-gear"></i> Personalizar
+    </button>
+</div>
+
+<!-- Painel de personalização (oculto por padrão) -->
+<div id="customizePanel" class="card mb-4" style="display: none;">
+    <div class="card-body">
+        <h5 class="card-title">Personalizar Dashboard</h5>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showKpis" checked>
+                    <label class="form-check-label" for="showKpis">
+                        Mostrar KPIs
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showCharts" checked>
+                    <label class="form-check-label" for="showCharts">
+                        Mostrar Gráficos
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showLastProposals" checked>
+                    <label class="form-check-label" for="showLastProposals">
+                        Mostrar Últimas Propostas
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button id="saveCustomize" class="btn btn-primary btn-sm mt-2">Salvar</button>
+        <button id="cancelCustomize" class="btn btn-secondary btn-sm mt-2">Cancelar</button>
+    </div>
 </div>
 
 <!-- ====== LINHA DE KPIs ====== -->
-<div class="row g-3 mb-4">
+<div id="kpi-row" class="row g-3 mb-4 sortable" data-section="kpis">
 
     <!-- Clientes -->
-    <div class="col-md-4 col-sm-6">
+    <div class="col-md-4 col-sm-6" data-id="clientes">
         <div class="df-kpi-card">
             <div class="df-kpi-main">
                 <div class="df-kpi-icon bg-kpi-blue">
@@ -33,7 +73,7 @@
     </div>
 
     <!-- Propostas cadastradas -->
-  <div class="col-md-4 col-sm-6">
+  <div class="col-md-4 col-sm-6" data-id="propostas">
       <div class="df-kpi-card">
           <div class="df-kpi-main">
               <div class="df-kpi-icon bg-kpi-purple">
@@ -45,7 +85,7 @@
               </div>
           </div>
           <div class="df-kpi-actions">
-              <a href="{{ url_for('ui.index') }}"
+              <a href="{{ url_for('ui.listar_propostas') }}"
                 class="btn btn-outline-secondary btn-sm">
                   Ver propostas
               </a>
@@ -55,7 +95,7 @@
 
 
     <!-- Valor total aceito -->
-    <div class="col-md-4 col-sm-12">
+    <div class="col-md-4 col-sm-12" data-id="valor">
         <div class="df-kpi-card">
             <div class="df-kpi-main">
                 <div class="df-kpi-icon bg-kpi-green">
@@ -63,7 +103,7 @@
                 </div>
                 <div class="df-kpi-meta">
                     <h3>
-                        R {{ "%.2f"|format(valor_total_aceitas)|replace(".", ",") }}
+                        R$ {{ "%.2f"|format(valor_total_aceitas)|replace(".", ",") }}
                     </h3>
                     <small>Valor total aceito</small>
                 </div>
@@ -79,8 +119,24 @@
 
 </div>
 
+<!-- ====== GRÁFICOS ====== -->
+<div id="chart-row" class="row g-3 mb-4 sortable" data-section="charts">
+    <div class="col-md-6" data-id="status-chart">
+        <div class="df-chart-card">
+            <h5>Distribuição de Status das Propostas</h5>
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+    <div class="col-md-6" data-id="arrecadacao-chart">
+        <div class="df-chart-card">
+            <h5>Arrecadação Mensal</h5>
+            <canvas id="arrecadacaoChart"></canvas>
+        </div>
+    </div>
+</div>
+
 <!-- ====== ÚLTIMAS PROPOSTAS ====== -->
-<div id="lista-propostas" class="df-last-list mb-4">
+<div id="last-proposals" class="df-last-list mb-4">
     <h4>Últimas propostas</h4>
 
     {% if propostas %}
@@ -90,7 +146,7 @@
                 <div>
                     <strong>#{{ p.id }}</strong> · {{ p.titulo }}
                     <br>
-                    <small class="text-muted">{{ p.cliente.nome }}</small>
+                    <small class="text-muted">{{ p.cliente.nome if p.cliente else 'Cliente não encontrado' }}</small>
                 </div>
                 <div class="text-end">
                     <span class="badge bg-info text-dark text-uppercase">
@@ -120,5 +176,171 @@
         Criar nova proposta
     </a>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de status
+    const statusData = {{ status_data | tojson }};
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: statusData.map(d => d.status),
+            datasets: [{
+                data: statusData.map(d => d.count),
+                backgroundColor: ['#7b2cbf', '#4895ef', '#2a9d8f', '#f4a261', '#e76f51'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: getComputedStyle(document.body).getPropertyValue('--df-text')
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de arrecadação mensal
+    const arrecadacaoData = {{ arrecadacao_mes_data | tojson }};
+    const arrecadacaoCtx = document.getElementById('arrecadacaoChart').getContext('2d');
+    new Chart(arrecadacaoCtx, {
+        type: 'line',
+        data: {
+            labels: arrecadacaoData.map(d => d.mes),
+            datasets: [{
+                label: 'Arrecadação (R$)',
+                data: arrecadacaoData.map(d => d.valor),
+                backgroundColor: 'rgba(42, 157, 143, 0.2)',
+                borderColor: '#2a9d8f',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + value.toLocaleString('pt-BR');
+                        },
+                        color: getComputedStyle(document.body).getPropertyValue('--df-text')
+                    },
+                    grid: {
+                        color: getComputedStyle(document.body).getPropertyValue('--df-border')
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: getComputedStyle(document.body).getPropertyValue('--df-text')
+                    },
+                    grid: {
+                        color: getComputedStyle(document.body).getPropertyValue('--df-border')
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+});
+
+// Personalização do dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    const customizeBtn = document.getElementById('customizeBtn');
+    const customizePanel = document.getElementById('customizePanel');
+    const saveBtn = document.getElementById('saveCustomize');
+    const cancelBtn = document.getElementById('cancelCustomize');
+    const showKpis = document.getElementById('showKpis');
+    const showCharts = document.getElementById('showCharts');
+    const showLastProposals = document.getElementById('showLastProposals');
+
+    // Carregar estado salvo
+    const savedState = JSON.parse(localStorage.getItem('dashboardConfig') || '{}');
+    showKpis.checked = savedState.showKpis !== false;
+    showCharts.checked = savedState.showCharts !== false;
+    showLastProposals.checked = savedState.showLastProposals !== false;
+    applyVisibility();
+
+    // Toggle painel
+    customizeBtn.addEventListener('click', function() {
+        customizePanel.style.display = customizePanel.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Salvar
+    saveBtn.addEventListener('click', function() {
+        const config = {
+            showKpis: showKpis.checked,
+            showCharts: showCharts.checked,
+            showLastProposals: showLastProposals.checked
+        };
+        localStorage.setItem('dashboardConfig', JSON.stringify(config));
+        applyVisibility();
+        customizePanel.style.display = 'none';
+    });
+
+    // Cancelar
+    cancelBtn.addEventListener('click', function() {
+        // Resetar checkboxes para estado salvo
+        showKpis.checked = savedState.showKpis !== false;
+        showCharts.checked = savedState.showCharts !== false;
+        showLastProposals.checked = savedState.showLastProposals !== false;
+        customizePanel.style.display = 'none';
+    });
+
+    function applyVisibility() {
+        document.getElementById('kpi-row').style.display = showKpis.checked ? '' : 'none';
+        document.getElementById('chart-row').style.display = showCharts.checked ? '' : 'none';
+        document.getElementById('last-proposals').style.display = showLastProposals.checked ? '' : 'none';
+    }
+
+    // Drag and drop para reordenar
+    const savedOrder = JSON.parse(localStorage.getItem('dashboardOrder') || '{}');
+    applyOrder();
+
+    document.querySelectorAll('.sortable').forEach(container => {
+        const section = container.dataset.section;
+        Sortable.create(container, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function(evt) {
+                saveOrder();
+            }
+        });
+    });
+
+    function saveOrder() {
+        const order = {};
+        document.querySelectorAll('.sortable').forEach(container => {
+            const section = container.dataset.section;
+            const ids = Array.from(container.children).map(child => child.dataset.id).filter(id => id);
+            order[section] = ids;
+        });
+        localStorage.setItem('dashboardOrder', JSON.stringify(order));
+    }
+
+    function applyOrder() {
+        Object.keys(savedOrder).forEach(section => {
+            const container = document.querySelector(`[data-section="${section}"]`);
+            if (container) {
+                const order = savedOrder[section];
+                const children = Array.from(container.children);
+                const sorted = order.map(id => children.find(child => child.dataset.id === id)).filter(Boolean);
+                sorted.forEach(child => container.appendChild(child));
+            }
+        });
+    }
+});
+</script>
 
 {% endblock %}
