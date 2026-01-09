@@ -1,17 +1,38 @@
 ﻿# DealFlow
-Sistema moderno de gestao de propostas comerciais.
+Sistema moderno de gestão de propostas comerciais.
 
-## Visao geral
-DealFlow permite criar, gerenciar e enviar propostas com geracao de PDF/Excel, controle de status e autenticacao.
+## Quickstart
+```bash
+git clone https://github.com/leolima92/DealFlow.git
+cd DealFlow
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+# source venv/bin/activate
+pip install -r requirements.txt
+python scripts/init_db.py --reset
+python app.py
+```
+
+## Demo
+Em breve! Enquanto isso, veja as telas abaixo.
+## Screenshots
+![Dashboard](docs/screenshots/dashboard.svg)
+![Nova proposta](docs/screenshots/nova-proposta.svg)
+![PDF](docs/screenshots/pdf.svg)
+
+## Visão geral
+DealFlow permite criar, gerenciar e enviar propostas com geração de PDF/Excel, controle de status e autenticação.
 
 ## Funcionalidades
 - Cadastro de clientes e propostas
 - Templates de proposta (layout, textos e cor no PDF)
-- Itens com descricao, quantidade, valor unitario e descontos
+- Itens com descrição, quantidade, valor unitário e descontos
 - Status: rascunho, enviada, aceita, recusada, cancelada
-- Exportacao em PDF e Excel
-- Autenticacao e sessao de usuarios
-- Tema claro/escuro com preferencia salva
+- Exportação em PDF e Excel
+- Autenticação e sessão de usuários
+- Tema claro/escuro com preferência salva
 
 ## Tecnologias
 - Python 3.11+
@@ -25,7 +46,7 @@ DealFlow permite criar, gerenciar e enviar propostas com geracao de PDF/Excel, c
 ## Requisitos
 - Python 3.11+
 
-## Instalacao e execucao
+## Instalação e execução
 1. Crie e ative o ambiente virtual
 ```bash
 python -m venv venv
@@ -45,6 +66,11 @@ python app.py
 
 Acesse `http://localhost:5000`.
 
+## Credenciais de demo
+Usuário padrão criado pelo `init_db.py`:
+- usuário: `admin`
+- senha: `admin`
+
 ## Desenvolvimento e testes
 ```bash
 pip install -r requirements-dev.txt
@@ -55,25 +81,37 @@ pytest
 ruff check .
 ```
 
-## Configuracao
-- `DEALFLOW_SECRET_KEY`: chave de sessao do Flask (recomendado definir em producao).
-- `DEALFLOW_SECURE_COOKIES`: define cookies de sessao como `Secure` (use `true` em producao com HTTPS).
-- `DEALFLOW_SESSION_SAMESITE`: padrao `Lax`.
+## Configuração
+Copie `.env.example` para `.env` e ajuste os valores conforme necessário.
+
+- `DEALFLOW_SECRET_KEY`: chave de sessão do Flask (recomendado definir em produção).
+- `DEALFLOW_SECURE_COOKIES`: define cookies de sessão como `Secure` (use `true` em produção com HTTPS).
+- `DEALFLOW_SESSION_SAMESITE`: padrão `Lax`.
 - `DEALFLOW_LOG_LEVEL`: nivel de log (ex.: `INFO`, `DEBUG`).
-- Logs em `logs/app.log` com rotacao.
-- Base local em `gestor_propostas/services/gestor_propostas.db`.
+- `DEALFLOW_DB_PATH`: caminho do banco SQLite (padrão `instance/dealflow.db`).
+- Logs em `logs/app.log` com rotação.
+- Base local em `instance/` (ou no caminho configurado em `DEALFLOW_DB_PATH`).
 - Logo padrao em `static/img/dealflow_logo.png` (usado nos templates).
 
-## Seguranca
+## Segurança
 - Senhas armazenadas com hash (Argon2).
-- CSRF habilitado para todos os formularios (Flask-WTF).
-- Cookies de sessao com `HttpOnly` e `SameSite` por padrao.
+- CSRF habilitado para todos os formulários (Flask-WTF).
+- Cookies de sessão com `HttpOnly` e `SameSite` por padrão.
 
 ## Banco de dados (recriacao/seed)
-Para recriar o banco e o usuario admin do zero:
+Para recriar o banco e o usuário admin do zero:
 ```bash
 python scripts/init_db.py --reset
 ```
+
+## Roadmap
+- [x] CRUD + status + templates
+- [x] Exportação PDF/Excel
+- [x] Auth + CSRF + Argon2
+- [ ] Link público da proposta (token + expiração)
+- [ ] Envio por e-mail (SMTP)
+- [ ] Docker + guia de deploy
+
 ## Estrutura
 ```
 DealFlow/
@@ -87,7 +125,8 @@ DealFlow/
       storage.py
       pdf_report.py
       excel_report.py
-      gestor_propostas.db
+  instance/
+    dealflow.db
   webapp/templates/
   static/
 ```

@@ -4,6 +4,7 @@ import os
 
 from flask import Flask
 from flask_wtf import CSRFProtect
+from dotenv import load_dotenv
 
 from .models import GestorPropostas
 from .services.storage import StorageManager
@@ -33,6 +34,9 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Carrega variáveis do .env quando disponível
+load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 # instância global do gestor (usada no ui.py)
 gestor = GestorPropostas()
