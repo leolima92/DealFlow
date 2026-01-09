@@ -65,7 +65,7 @@
             </td>
             <td>R$ {{ "%.2f"|format(p.calcular_total())|replace(".", ",") }}</td>
             <td class="text-end">
-              <a href="{{ url_for('ui.detalhe_proposta', proposta_id=p.id) }}"
+              <a href="{{ url_for('ui.proposta_detalhe', pid=p.id) }}"
                  class="btn btn-sm btn-outline-light">
                 Detalhes
               </a>

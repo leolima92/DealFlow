@@ -113,6 +113,34 @@
 
         <div class="card df-form-card mb-3">
             <div class="card-body">
+                <h5 class="card-title">Template</h5>
+                <form method="post" action="{{ url_for('ui.atualizar_template', pid=proposta.id) }}">
+                    <div class="mb-2">
+                        <select class="form-select" name="template_id">
+                            <option value="">Sem template</option>
+                            {% for t in templates %}
+                            <option value="{{ t.id }}" {% if proposta.template_id == t.id %}selected{% endif %}>
+                                {{ t.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                        Atualizar template
+                    </button>
+                </form>
+
+                {% if template_selecionado %}
+                <hr>
+                <p class="small text-muted mb-0">
+                    <strong>Em uso:</strong> {{ template_selecionado.nome }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card df-form-card mb-3">
+            <div class="card-body">
                 <h5 class="card-title">Desconto</h5>
                 <form method="post" action="{{ url_for('ui.aplicar_desconto', pid=proposta.id) }}">
                     <div class="mb-2">

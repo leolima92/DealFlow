@@ -27,6 +27,13 @@ logger = logging.getLogger(__name__)
 
 # ========= helpers ========= #
 
+def _parse_int(value, default=None):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def login_required(view_func):
     @wraps(view_func)
     def wrapper(*args, **kwargs):
@@ -177,13 +184,26 @@ def proposta_detalhe(pid: int):
         flash("Cliente da proposta não encontrado.", "error")
         return redirect(url_for("ui.index"))
 
-    return render_template("proposta_detalhe.html", proposta=proposta)
+    templates = gestor.listar_templates()
+    template_selecionado = (
+        gestor.obter_template_por_id(proposta.template_id)
+        if proposta.template_id
+        else None
+    )
+
+    return render_template(
+        "proposta_detalhe.html",
+        proposta=proposta,
+        templates=templates,
+        template_selecionado=template_selecionado,
+    )
 
 
 @bp.route("/propostas/nova", methods=["GET", "POST"])
 @login_required
 def nova_proposta():
     clientes = gestor.listar_clientes()
+    templates = gestor.listar_templates()
 
     if not clientes:
         flash("Cadastre ao menos um cliente antes de criar uma proposta.", "info")
@@ -194,6 +214,7 @@ def nova_proposta():
         titulo = request.form.get("titulo", "").strip()
         responsavel = request.form.get("responsavel", "").strip()
         validade_str = request.form.get("validade", "").strip()
+        template_id = _parse_int(request.form.get("template_id"))
 
         forma_pagamento = request.form.get("forma_pagamento", "").strip()
         num_parcelas = request.form.get("num_parcelas", "").strip()
@@ -221,12 +242,22 @@ def nova_proposta():
             cond_parts.append(f"Obs: {pagamento_obs}")
         cond_pag = " | ".join(cond_parts)
 
+        template = gestor.obter_template_por_id(template_id) if template_id else None
+        if template:
+            if not titulo and template.titulo_padrao:
+                titulo = template.titulo_padrao
+            if not responsavel and template.responsavel_padrao:
+                responsavel = template.responsavel_padrao
+            if not cond_pag and template.condicoes_pagamento_padrao:
+                cond_pag = template.condicoes_pagamento_padrao
+
         prop = gestor.criar_proposta(
             cliente,
             titulo,
             validade=validade,
             responsavel=responsavel,
             condicoes_pagamento=cond_pag,
+            template_id=template.id if template else None,
         )
 
         StorageManager.salvar_ou_atualizar_proposta(prop)
@@ -236,7 +267,11 @@ def nova_proposta():
         flash(f"Proposta #{prop.id} criada com sucesso!", "success")
         return redirect(url_for("ui.proposta_detalhe", pid=prop.id))
 
-    return render_template("nova_proposta.html", clientes=clientes)
+    return render_template(
+        "nova_proposta.html",
+        clientes=clientes,
+        templates=templates,
+    )
 
 
 @bp.route("/propostas/<int:pid>/add_item", methods=["POST"])
@@ -337,6 +372,30 @@ def atualizar_pagamento(pid: int):
     return redirect(url_for("ui.proposta_detalhe", pid=pid))
 
 
+@bp.route("/propostas/<int:pid>/template", methods=["POST"])
+@login_required
+def atualizar_template(pid: int):
+    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    if not proposta:
+        flash("Proposta nÇœo encontrada.", "error")
+        return redirect(url_for("ui.index"))
+
+    template_id = _parse_int(request.form.get("template_id"))
+    if template_id:
+        template = gestor.obter_template_por_id(template_id)
+        if not template:
+            flash("Template invalido.", "error")
+            return redirect(url_for("ui.proposta_detalhe", pid=pid))
+        proposta.template_id = template.id
+        flash("Template atualizado.", "success")
+    else:
+        proposta.template_id = None
+        flash("Template removido.", "success")
+
+    StorageManager.salvar_ou_atualizar_proposta(proposta)
+    return redirect(url_for("ui.proposta_detalhe", pid=pid))
+
+
 @bp.route("/propostas/<int:pid>/excluir", methods=["POST"])
 @login_required
 def excluir_proposta(pid: int):
@@ -426,7 +485,12 @@ def download_pdf(pid: int):
     tmp = NamedTemporaryFile(delete=False, suffix=f"_proposta_{proposta.id}.pdf")
     tmp.close()
 
-    PdfReportGenerator.gerar_pdf_proposta(proposta, tmp.name)
+    template = (
+        gestor.obter_template_por_id(proposta.template_id)
+        if proposta.template_id
+        else None
+    )
+    PdfReportGenerator.gerar_pdf_proposta(proposta, tmp.name, template=template)
 
     return send_file(
         tmp.name,
@@ -476,6 +540,95 @@ def propostas_lista():
         total_pages=total_pages,
         total_propostas=total_propostas_filtradas,
     )
+
+
+# ========= templates ========= #
+
+@bp.route("/templates")
+@login_required
+def templates_lista():
+    return render_template("templates.html", templates=gestor.listar_templates())
+
+
+@bp.route("/templates/novo", methods=["GET", "POST"])
+@login_required
+def novo_template():
+    if request.method == "POST":
+        nome = request.form.get("nome", "").strip()
+        if not nome:
+            flash("Nome do template e obrigatorio.", "error")
+            return redirect(url_for("ui.novo_template"))
+
+        template = gestor.criar_template(
+            nome=nome,
+            titulo_padrao=request.form.get("titulo_padrao", "").strip(),
+            responsavel_padrao=request.form.get("responsavel_padrao", "").strip(),
+            condicoes_pagamento_padrao=request.form.get("condicoes_pagamento_padrao", "").strip(),
+            intro_texto=request.form.get("intro_texto", "").strip(),
+            termos=request.form.get("termos", "").strip(),
+            rodape=request.form.get("rodape", "").strip(),
+            cor_primaria=request.form.get("cor_primaria", "").strip() or "#1f4e79",
+            usar_logo=request.form.get("usar_logo") == "1",
+            logo_path=request.form.get("logo_path", "").strip() or "static/img/dealflow_logo.png",
+        )
+
+        StorageManager.salvar_ou_atualizar_template(template)
+        flash("Template criado com sucesso.", "success")
+        return redirect(url_for("ui.templates_lista"))
+
+    return render_template("template_form.html", template=None)
+
+
+@bp.route("/templates/<int:tid>/editar", methods=["GET", "POST"])
+@login_required
+def editar_template(tid: int):
+    template = gestor.obter_template_por_id(tid)
+    if not template:
+        flash("Template nao encontrado.", "error")
+        return redirect(url_for("ui.templates_lista"))
+
+    if request.method == "POST":
+        nome = request.form.get("nome", "").strip()
+        if not nome:
+            flash("Nome do template e obrigatorio.", "error")
+            return redirect(url_for("ui.editar_template", tid=tid))
+
+        template.nome = nome
+        template.titulo_padrao = request.form.get("titulo_padrao", "").strip()
+        template.responsavel_padrao = request.form.get("responsavel_padrao", "").strip()
+        template.condicoes_pagamento_padrao = request.form.get("condicoes_pagamento_padrao", "").strip()
+        template.intro_texto = request.form.get("intro_texto", "").strip()
+        template.termos = request.form.get("termos", "").strip()
+        template.rodape = request.form.get("rodape", "").strip()
+        template.cor_primaria = request.form.get("cor_primaria", "").strip() or "#1f4e79"
+        template.usar_logo = request.form.get("usar_logo") == "1"
+        template.logo_path = request.form.get("logo_path", "").strip() or "static/img/dealflow_logo.png"
+
+        StorageManager.salvar_ou_atualizar_template(template)
+        flash("Template atualizado.", "success")
+        return redirect(url_for("ui.templates_lista"))
+
+    return render_template("template_form.html", template=template)
+
+
+@bp.route("/templates/<int:tid>/excluir", methods=["POST"])
+@login_required
+def excluir_template(tid: int):
+    template = gestor.obter_template_por_id(tid)
+    if not template:
+        flash("Template nao encontrado.", "error")
+        return redirect(url_for("ui.templates_lista"))
+
+    for proposta in gestor.propostas:
+        if proposta.template_id == tid:
+            proposta.template_id = None
+            StorageManager.salvar_ou_atualizar_proposta(proposta)
+
+    gestor.templates = [t for t in gestor.templates if t.id != tid]
+    StorageManager.deletar_template(tid)
+
+    flash("Template excluido.", "success")
+    return redirect(url_for("ui.templates_lista"))
 
 
 # ========= clientes ========= #

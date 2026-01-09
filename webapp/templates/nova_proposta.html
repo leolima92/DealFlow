@@ -19,6 +19,16 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label">Template</label>
+                        <select name="template_id" class="form-select">
+                            <option value="">Sem template</option>
+                            {% for t in templates %}
+                            <option value="{{ t.id }}">{{ t.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">Título da proposta</label>
                         <input type="text" name="titulo" class="form-control"
                                placeholder="Ex: Proposta de serviços de consultoria">

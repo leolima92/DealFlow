@@ -35,6 +35,40 @@ class ItemProposta:
         )
 
 
+class TemplateProposta:
+    _contador_id = 1
+
+    def __init__(
+        self,
+        nome: str,
+        titulo_padrao: str = "",
+        responsavel_padrao: str = "",
+        condicoes_pagamento_padrao: str = "",
+        intro_texto: str = "",
+        termos: str = "",
+        rodape: str = "",
+        cor_primaria: str = "#1f4e79",
+        usar_logo: bool = True,
+        logo_path: str = "static/img/dealflow_logo.png",
+    ):
+        self.id = TemplateProposta._contador_id
+        TemplateProposta._contador_id += 1
+
+        self.nome = nome
+        self.titulo_padrao = titulo_padrao
+        self.responsavel_padrao = responsavel_padrao
+        self.condicoes_pagamento_padrao = condicoes_pagamento_padrao
+        self.intro_texto = intro_texto
+        self.termos = termos
+        self.rodape = rodape
+        self.cor_primaria = cor_primaria
+        self.usar_logo = usar_logo
+        self.logo_path = logo_path
+
+    def __str__(self) -> str:
+        return f"({self.id}) {self.nome}"
+
+
 class Proposta:
     _contador_id = 1
     STATUS_VALIDOS = ["rascunho", "enviada", "aceita", "recusada", "cancelada"]
@@ -46,6 +80,7 @@ class Proposta:
         validade=None,       
         responsavel: str = "",
         condicoes_pagamento: str = "",
+        template_id: Optional[int] = None,
     ):
         self.id = Proposta._contador_id
         Proposta._contador_id += 1
@@ -58,6 +93,7 @@ class Proposta:
         self.validade = validade         
         self.responsavel = responsavel
         self.condicoes_pagamento = condicoes_pagamento
+        self.template_id = template_id
 
         self.tipo_desconto = None  
         self.desconto_percentual = 0.0
@@ -112,6 +148,7 @@ class GestorPropostas:
     def __init__(self):
         self.clientes: List[Cliente] = []
         self.propostas: List[Proposta] = []
+        self.templates: List[TemplateProposta] = []
 
     def criar_cliente(self, nome: str, documento: str = "", contato: str = "") -> Cliente:
         cliente = Cliente(nome, documento, contato)
@@ -135,6 +172,7 @@ class GestorPropostas:
         validade=None,
         responsavel: str = "",
         condicoes_pagamento: str = "",
+        template_id: Optional[int] = None,
     ) -> Proposta:
         proposta = Proposta(
             cliente,
@@ -142,6 +180,7 @@ class GestorPropostas:
             validade=validade,
             responsavel=responsavel,
             condicoes_pagamento=condicoes_pagamento,
+            template_id=template_id,
         )
         self.propostas.append(proposta)
         return proposta
@@ -152,4 +191,43 @@ class GestorPropostas:
     def obter_proposta_por_indice(self, indice: int) -> Optional[Proposta]:
         if 0 <= indice < len(self.propostas):
             return self.propostas[indice]
+        return None
+
+    # ---- Templates ---- #
+
+    def criar_template(
+        self,
+        nome: str,
+        titulo_padrao: str = "",
+        responsavel_padrao: str = "",
+        condicoes_pagamento_padrao: str = "",
+        intro_texto: str = "",
+        termos: str = "",
+        rodape: str = "",
+        cor_primaria: str = "#1f4e79",
+        usar_logo: bool = True,
+        logo_path: str = "static/img/dealflow_logo.png",
+    ) -> TemplateProposta:
+        template = TemplateProposta(
+            nome=nome,
+            titulo_padrao=titulo_padrao,
+            responsavel_padrao=responsavel_padrao,
+            condicoes_pagamento_padrao=condicoes_pagamento_padrao,
+            intro_texto=intro_texto,
+            termos=termos,
+            rodape=rodape,
+            cor_primaria=cor_primaria,
+            usar_logo=usar_logo,
+            logo_path=logo_path,
+        )
+        self.templates.append(template)
+        return template
+
+    def listar_templates(self) -> List[TemplateProposta]:
+        return self.templates
+
+    def obter_template_por_id(self, template_id: int) -> Optional[TemplateProposta]:
+        for template in self.templates:
+            if template.id == template_id:
+                return template
         return None

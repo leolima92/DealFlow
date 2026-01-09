@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 from typing import Dict
 
-from ..models import GestorPropostas, Cliente, Proposta, ItemProposta
+from ..models import GestorPropostas, Cliente, Proposta, ItemProposta, TemplateProposta
 
 BASE_DIR = os.path.dirname(__file__)
 
@@ -44,6 +44,7 @@ class StorageManager:
                 validade TEXT,
                 responsavel TEXT,
                 condicoes_pagamento TEXT,
+                template_id INTEGER,
                 tipo_desconto TEXT,
                 desconto_percentual REAL,
                 desconto_valor REAL,
@@ -66,8 +67,35 @@ class StorageManager:
             """
         )
 
+        # Templates
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS templates (
+                id INTEGER PRIMARY KEY,
+                nome TEXT NOT NULL,
+                titulo_padrao TEXT,
+                responsavel_padrao TEXT,
+                condicoes_pagamento_padrao TEXT,
+                intro_texto TEXT,
+                termos TEXT,
+                rodape TEXT,
+                cor_primaria TEXT,
+                usar_logo INTEGER,
+                logo_path TEXT
+            )
+            """
+        )
+
+        if not cls._has_column(cur, "propostas", "template_id"):
+            cur.execute("ALTER TABLE propostas ADD COLUMN template_id INTEGER")
+
         conn.commit()
         conn.close()
+
+    @classmethod
+    def _has_column(cls, cur: sqlite3.Cursor, table: str, column: str) -> bool:
+        cur.execute(f"PRAGMA table_info({table})")
+        return any(row[1] == column for row in cur.fetchall())
 
     @classmethod
     def salvar_ou_atualizar_cliente(cls, cliente: Cliente):
@@ -127,9 +155,9 @@ class StorageManager:
                 INSERT INTO propostas (
                     id, cliente_id, titulo, data_criacao, status,
                     validade, responsavel, condicoes_pagamento,
-                    tipo_desconto, desconto_percentual, desconto_valor
+                    template_id, tipo_desconto, desconto_percentual, desconto_valor
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     proposta.id,
@@ -140,6 +168,7 @@ class StorageManager:
                     validade_str,
                     proposta.responsavel,
                     proposta.condicoes_pagamento,
+                    proposta.template_id,
                     proposta.tipo_desconto,
                     proposta.desconto_percentual,
                     proposta.desconto_valor,
@@ -156,6 +185,7 @@ class StorageManager:
                        validade = ?,
                        responsavel = ?,
                        condicoes_pagamento = ?,
+                       template_id = ?,
                        tipo_desconto = ?,
                        desconto_percentual = ?,
                        desconto_valor = ?
@@ -169,6 +199,7 @@ class StorageManager:
                     validade_str,
                     proposta.responsavel,
                     proposta.condicoes_pagamento,
+                    proposta.template_id,
                     proposta.tipo_desconto,
                     proposta.desconto_percentual,
                     proposta.desconto_valor,
@@ -186,6 +217,87 @@ class StorageManager:
 
         cur.execute("DELETE FROM itens WHERE proposta_id = ?", (proposta_id,))
         cur.execute("DELETE FROM propostas WHERE id = ?", (proposta_id,))
+
+        conn.commit()
+        conn.close()
+
+    # =========================================================
+    #   TEMPLATES
+    # =========================================================
+    @classmethod
+    def salvar_ou_atualizar_template(cls, template: TemplateProposta):
+        conn = cls._get_conn()
+        cur = conn.cursor()
+
+        cur.execute("SELECT 1 FROM templates WHERE id = ?", (template.id,))
+        existe = cur.fetchone() is not None
+
+        usar_logo = 1 if template.usar_logo else 0
+
+        if not existe:
+            cur.execute(
+                """
+                INSERT INTO templates (
+                    id, nome, titulo_padrao, responsavel_padrao,
+                    condicoes_pagamento_padrao, intro_texto, termos,
+                    rodape, cor_primaria, usar_logo, logo_path
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    template.id,
+                    template.nome,
+                    template.titulo_padrao,
+                    template.responsavel_padrao,
+                    template.condicoes_pagamento_padrao,
+                    template.intro_texto,
+                    template.termos,
+                    template.rodape,
+                    template.cor_primaria,
+                    usar_logo,
+                    template.logo_path,
+                ),
+            )
+        else:
+            cur.execute(
+                """
+                UPDATE templates
+                   SET nome = ?,
+                       titulo_padrao = ?,
+                       responsavel_padrao = ?,
+                       condicoes_pagamento_padrao = ?,
+                       intro_texto = ?,
+                       termos = ?,
+                       rodape = ?,
+                       cor_primaria = ?,
+                       usar_logo = ?,
+                       logo_path = ?
+                 WHERE id = ?
+                """,
+                (
+                    template.nome,
+                    template.titulo_padrao,
+                    template.responsavel_padrao,
+                    template.condicoes_pagamento_padrao,
+                    template.intro_texto,
+                    template.termos,
+                    template.rodape,
+                    template.cor_primaria,
+                    usar_logo,
+                    template.logo_path,
+                    template.id,
+                ),
+            )
+
+        conn.commit()
+        conn.close()
+
+    @classmethod
+    def deletar_template(cls, template_id: int):
+        conn = cls._get_conn()
+        cur = conn.cursor()
+
+        cur.execute("DELETE FROM templates WHERE id = ?", (template_id,))
 
         conn.commit()
         conn.close()
@@ -216,6 +328,7 @@ class StorageManager:
     def carregar_tudo(cls, gestor: GestorPropostas):
         gestor.clientes.clear()
         gestor.propostas.clear()
+        gestor.templates.clear()
 
         conn = cls._get_conn()
         cur = conn.cursor()
@@ -238,11 +351,59 @@ class StorageManager:
         if max_cliente_id > 0:
             Cliente._contador_id = max_cliente_id + 1
 
+        # ---- Templates
+        cur.execute(
+            """
+            SELECT
+                id, nome, titulo_padrao, responsavel_padrao,
+                condicoes_pagamento_padrao, intro_texto, termos,
+                rodape, cor_primaria, usar_logo, logo_path
+            FROM templates
+            ORDER BY id
+            """
+        )
+        rows_templates = cur.fetchall()
+
+        max_template_id = 0
+        for row in rows_templates:
+            (
+                t_id,
+                nome,
+                titulo_padrao,
+                responsavel_padrao,
+                condicoes_pagamento_padrao,
+                intro_texto,
+                termos,
+                rodape,
+                cor_primaria,
+                usar_logo,
+                logo_path,
+            ) = row
+
+            template = TemplateProposta(
+                nome=nome,
+                titulo_padrao=titulo_padrao or "",
+                responsavel_padrao=responsavel_padrao or "",
+                condicoes_pagamento_padrao=condicoes_pagamento_padrao or "",
+                intro_texto=intro_texto or "",
+                termos=termos or "",
+                rodape=rodape or "",
+                cor_primaria=cor_primaria or "#1f4e79",
+                usar_logo=bool(usar_logo),
+                logo_path=logo_path or "static/img/dealflow_logo.png",
+            )
+            template.id = t_id
+            gestor.templates.append(template)
+            max_template_id = max(max_template_id, t_id)
+
+        if max_template_id > 0:
+            TemplateProposta._contador_id = max_template_id + 1
+
         cur.execute(
             """
             SELECT
                 id, cliente_id, titulo, data_criacao, status,
-                validade, responsavel, condicoes_pagamento,
+                validade, responsavel, condicoes_pagamento, template_id,
                 tipo_desconto, desconto_percentual, desconto_valor
             FROM propostas
             ORDER BY id
@@ -263,6 +424,7 @@ class StorageManager:
                 validade_str,
                 responsavel,
                 condicoes_pagamento,
+                template_id,
                 tipo_desconto,
                 desconto_percentual,
                 desconto_valor,
@@ -278,6 +440,7 @@ class StorageManager:
                 validade=None,
                 responsavel=responsavel or "",
                 condicoes_pagamento=condicoes_pagamento or "",
+                template_id=template_id,
             )
 
             prop.id = p_id

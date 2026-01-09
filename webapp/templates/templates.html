@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Templates - Deal Flow{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h4 mb-0">Templates de proposta</h1>
+        <p class="text-muted mb-0">Gerencie templates de layout e conteudo para PDF.</p>
+    </div>
+    <a href="{{ url_for('ui.novo_template') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Novo template
+    </a>
+</div>
+
+<div class="card df-form-card">
+    <div class="card-body">
+        {% if templates %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle df-table">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th class="text-muted">Cor primaria</th>
+                        <th class="text-muted">Logo</th>
+                        <th class="text-end">Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in templates %}
+                    <tr>
+                        <td>{{ t.nome }}</td>
+                        <td>{{ t.cor_primaria }}</td>
+                        <td>{{ "Sim" if t.usar_logo else "Nao" }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('ui.editar_template', tid=t.id) }}" class="btn btn-sm btn-outline-primary">
+                                Editar
+                            </a>
+                            <form method="post" action="{{ url_for('ui.excluir_template', tid=t.id) }}"
+                                  class="d-inline"
+                                  onsubmit="return confirm('Excluir este template?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum template cadastrado.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

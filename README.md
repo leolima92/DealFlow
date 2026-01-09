@@ -1,117 +1,70 @@
-# 💼 DealFlow  
-### Sistema moderno de gestão de propostas comerciais
+﻿# DealFlow
+Sistema moderno de gestao de propostas comerciais.
 
-DealFlow é um sistema profissional para criação, gerenciamento e envio de propostas comerciais.  
-Desenvolvido em **Python + Flask**, o projeto oferece uma interface elegante, modo escuro, geração de PDFs, exportação Excel, controle de usuários, formas de pagamento e muito mais.
+## Visao geral
+DealFlow permite criar, gerenciar e enviar propostas com geracao de PDF/Excel, controle de status e autenticacao.
 
----
+## Funcionalidades
+- Cadastro de clientes e propostas
+- Templates de proposta (layout, textos e cor no PDF)
+- Itens com descricao, quantidade, valor unitario e descontos
+- Status: rascunho, enviada, aceita, recusada, cancelada
+- Exportacao em PDF e Excel
+- Autenticacao e sessao de usuarios
+- Tema claro/escuro com preferencia salva
 
-## 🚀 Funcionalidades Principais
+## Tecnologias
+- Python 3.11+
+- Flask
+- SQLite
+- OpenPyXL
+- ReportLab
+- Bootstrap 5
+- JavaScript
 
-### 📝 Criação completa de propostas
-- Cadastro de clientes  
-- Itens detalhados (descrição, quantidade, valor unitário)  
-- Cálculo automático de subtotal e total  
-- Descontos percentuais ou por valor  
-- Condições de pagamento estruturadas (PIX, cartão, boleto, parcelas etc.)
+## Requisitos
+- Python 3.11+
 
-### 🎨 Modo Escuro (Dark Mode)
-- Alternância entre tema claro/escuro  
-- Preferência é salva automaticamente no navegador  
-- Interface moderna e agradável
-
-### 📄 Exportação
-- Geração de **PDF profissional**
-- Exportação de todas as propostas para **Excel**
-- Downloads diretos com um clique
-
-### 🔐 Sistema de Login
-- Cadastro de usuários
-- Autenticação por sessão
-- Proteção das rotas administrativas
-
-### 🔁 Controle de Status da Proposta
-- rascunho  
-- enviada  
-- aceita  
-- recusada  
-- cancelada  
-
-Com botão dedicado para **Enviar Proposta**.
-
-### ➕ Outras funcionalidades
-- Duplicar propostas
-- Excluir propostas
-- Filtrar por título, cliente e status
-- Dashboard inicial com métricas (propostas, clientes, valores)
-
----
-
-## 🛠️ Tecnologias
-
-DealFlow foi construído com:
-
-- **Python 3.11+**
-- **Flask**
-- **SQLite** (persistência local)
-- **OpenPyXL** (Excel)
-- **FPDF** (relatórios em PDF)
-- **Bootstrap 5** (UI responsiva)
-- **JavaScript** (Dark mode + UX)
-
----
-
-## 📦 Instalação
-
-### 1. Clone o repositório
-```bash
-git clone https://github.com/seu-usuario/dealflow.git
-cd dealflow
-```
-
-### 2. Crie o ambiente virtual
+## Instalacao e execucao
+1. Crie e ative o ambiente virtual
 ```bash
 python -m venv venv
-source venv/bin/activate   # Linux/Mac
-venv\Scripts\activate      # Windows
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/Mac
 ```
 
-### 3. Instale as dependências
+2. Instale as dependencias
 ```bash
-pip install -r requirements.txt
+pip install flask openpyxl reportlab
 ```
 
-### 4. Execute o servidor Flask
+3. Inicie o servidor
 ```bash
-python webapp/app.py
+python app.py
 ```
 
+Acesse `http://localhost:5000`.
 
-Acesse:
+## Configuracao
+- `DEALFLOW_SECRET_KEY`: chave de sessao do Flask (recomendado definir em producao).
+- Logs em `logs/app.log`.
+- Base local em `gestor_propostas/services/gestor_propostas.db`.
+- Logo padrao em `static/img/dealflow_logo.png` (usado nos templates).
 
-http://localhost:5000
-
-📂 Estrutura do Projeto
-dealflow/
-│
-├── gestor_propostas/
-│   ├── models.py
-│   ├── storage.py
-│   ├── excel_report.py
-│   ├── pdf_report.py
-│   ├── auth.py
-│   └── __init__.py
-│
-├── webapp/
-│   ├── app.py
-│   ├── templates/
-│   │   ├── base.html
-│   │   ├── login.html
-│   │   ├── register.html
-│   │   ├── index.html
-│   │   ├── nova_proposta.html
-│   │   ├── proposta_detalhe.html
-│   │   └── clientes.html
-│   └── static/ (caso adicione CSS/JS)
-│
-├── README.md
+## Estrutura
+```
+DealFlow/
+  app.py
+  gestor_propostas/
+    __init__.py
+    auth.py
+    models.py
+    ui.py
+    services/
+      storage.py
+      pdf_report.py
+      excel_report.py
+      gestor_propostas.db
+  webapp/templates/
+  static/
+```

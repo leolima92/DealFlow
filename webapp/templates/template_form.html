@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ "Editar template" if template else "Novo template" }} - Deal Flow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card df-form-card">
+            <div class="card-body">
+                <h1 class="h4 mb-3">{{ "Editar template" if template else "Novo template" }}</h1>
+
+                <form method="post" action="{{ url_for('ui.editar_template', tid=template.id) if template else url_for('ui.novo_template') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Nome</label>
+                        <input type="text" name="nome" class="form-control" required
+                               value="{{ template.nome if template else '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Titulo padrao</label>
+                        <input type="text" name="titulo_padrao" class="form-control"
+                               value="{{ template.titulo_padrao if template else '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Responsavel padrao</label>
+                        <input type="text" name="responsavel_padrao" class="form-control"
+                               value="{{ template.responsavel_padrao if template else '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Condicoes de pagamento padrao</label>
+                        <input type="text" name="condicoes_pagamento_padrao" class="form-control"
+                               value="{{ template.condicoes_pagamento_padrao if template else '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Texto de introducao</label>
+                        <textarea name="intro_texto" rows="3" class="form-control">{{ template.intro_texto if template else '' }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Termos</label>
+                        <textarea name="termos" rows="3" class="form-control">{{ template.termos if template else '' }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Rodape</label>
+                        <input type="text" name="rodape" class="form-control"
+                               value="{{ template.rodape if template else '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Cor primaria (hex)</label>
+                        <input type="text" name="cor_primaria" class="form-control"
+                               placeholder="#1f4e79"
+                               value="{{ template.cor_primaria if template else '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Logo (caminho)</label>
+                        <input type="text" name="logo_path" class="form-control"
+                               value="{{ template.logo_path if template else 'static/img/dealflow_logo.png' }}">
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" name="usar_logo" value="1"
+                               {% if template and template.usar_logo %}checked{% endif %}>
+                        <label class="form-check-label">Usar logo no PDF</label>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('ui.templates_lista') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">
+                            {{ "Salvar" if template else "Criar template" }}
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

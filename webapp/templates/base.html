@@ -60,6 +60,13 @@
                     </li>
 
                     <li class="nav-item">
+                        <a class="nav-link{% if request.endpoint in ['ui.templates_lista', 'ui.novo_template', 'ui.editar_template'] %} active{% endif %}"
+                           href="{{ url_for('ui.templates_lista') }}">
+                            <i class="bi bi-layout-text-sidebar me-1"></i> Templates
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
                         <a class="nav-link"
                            href="{{ url_for('ui.logout') }}">
                             <i class="bi bi-box-arrow-right me-1"></i> Sair
