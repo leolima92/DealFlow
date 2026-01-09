@@ -74,13 +74,6 @@ Para recriar o banco e o usuario admin do zero:
 ```bash
 python scripts/init_db.py --reset
 ```
-Para evoluir o esquema com migracoes, a recomendacao e migrar para SQLAlchemy + Alembic.
-
-## Screenshots
-![Dashboard do DealFlow](docs/screenshots/dashboard.svg)
-![Criacao de proposta](docs/screenshots/nova-proposta.svg)
-![Exportacao em PDF](docs/screenshots/pdf.svg)
-
 ## Estrutura
 ```
 DealFlow/
