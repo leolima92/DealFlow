@@ -1,6 +1,7 @@
 from datetime import datetime
 from functools import wraps
 import logging
+import os
 
 from flask import (
     Blueprint,
@@ -11,6 +12,7 @@ from flask import (
     flash,
     session,
     send_file,
+    after_this_request,
 )
 
 from .models import ItemProposta
@@ -121,7 +123,7 @@ def register():
 @login_required
 def index():
     q = request.args.get("q", "").strip().lower()
-    status = request.args.get("status", "").strip()
+    status = request.args.get("status", "").strip().lower()
 
     todas_propostas = gestor.listar_propostas()
     propostas = todas_propostas
@@ -135,7 +137,7 @@ def index():
             if q in p.titulo.lower() or (p.cliente and q in p.cliente.nome.lower())
         ]
 
-    statuses = sorted({p.status for p in todas_propostas})
+    statuses = sorted({p.status for p in todas_propostas}, key=str.lower)
     total_propostas = len(todas_propostas)
     total_clientes = len(gestor.listar_clientes())
     propostas_aceitas = [p for p in todas_propostas if p.status == "aceita"]
@@ -377,7 +379,7 @@ def atualizar_pagamento(pid: int):
 def atualizar_template(pid: int):
     proposta = next((p for p in gestor.propostas if p.id == pid), None)
     if not proposta:
-        flash("Proposta nÇœo encontrada.", "error")
+        flash("Proposta não encontrada.", "error")
         return redirect(url_for("ui.index"))
 
     template_id = _parse_int(request.form.get("template_id"))
@@ -491,6 +493,14 @@ def download_pdf(pid: int):
         else None
     )
     PdfReportGenerator.gerar_pdf_proposta(proposta, tmp.name, template=template)
+
+    @after_this_request
+    def _cleanup(response):
+        try:
+            os.remove(tmp.name)
+        except OSError:
+            logger.warning("Falha ao remover PDF temporário: %s", tmp.name)
+        return response
 
     return send_file(
         tmp.name,
