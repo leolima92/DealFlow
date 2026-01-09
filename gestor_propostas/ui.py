@@ -36,6 +36,22 @@ def _parse_int(value, default=None):
         return default
 
 
+def _parse_money(value: str):
+    if value is None:
+        return None
+    cleaned = value.strip().replace("R$", "").replace(" ", "")
+    if not cleaned:
+        return None
+    if "," in cleaned and "." in cleaned:
+        cleaned = cleaned.replace(".", "").replace(",", ".")
+    else:
+        cleaned = cleaned.replace(",", ".")
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
 def login_required(view_func):
     @wraps(view_func)
     def wrapper(*args, **kwargs):
@@ -292,11 +308,15 @@ def add_item(pid: int):
         flash("Descrição é obrigatória.", "error")
         return redirect(url_for("ui.proposta_detalhe", pid=pid))
 
-    try:
-        qtd = int(qtd_str)
-        valor = float(valor_str.replace(",", "."))
-    except ValueError:
-        flash("Quantidade e valor devem ser numéricos.", "error")
+    qtd = _parse_int(qtd_str)
+    valor = _parse_money(valor_str)
+
+    if qtd is None or qtd <= 0:
+        flash("Quantidade deve ser um número inteiro maior que zero.", "error")
+        return redirect(url_for("ui.proposta_detalhe", pid=pid))
+
+    if valor is None or valor < 0:
+        flash("Valor unitário deve ser um número válido maior ou igual a zero.", "error")
         return redirect(url_for("ui.proposta_detalhe", pid=pid))
 
     item = ItemProposta(desc, qtd, valor)
@@ -326,13 +346,18 @@ def aplicar_desconto(pid: int):
         proposta.desconto_valor = 0.0
         msg = "Desconto removido."
     else:
-        try:
-            valor = float(valor_str.replace(",", "."))
-        except ValueError:
+        valor = _parse_money(valor_str)
+        if valor is None:
             flash("Informe um valor numérico para desconto.", "error")
+            return redirect(url_for("ui.proposta_detalhe", pid=pid))
+        if valor < 0:
+            flash("O desconto não pode ser negativo.", "error")
             return redirect(url_for("ui.proposta_detalhe", pid=pid))
 
         if tipo == "%":
+            if valor > 100:
+                flash("Desconto percentual deve ser entre 0 e 100.", "error")
+                return redirect(url_for("ui.proposta_detalhe", pid=pid))
             proposta.definir_desconto_percentual(valor)
             msg = f"Desconto de {valor:.2f}% aplicado."
         elif tipo == "R":

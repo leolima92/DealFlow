@@ -14,11 +14,13 @@
             <i class="bi bi-filetype-pdf me-1"></i> PDF
         </a>
         <form method="post" action="{{ url_for('ui.enviar_proposta', pid=proposta.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm btn-success" type="submit">
                 <i class="bi bi-send me-1"></i> Marcar como enviada
             </button>
         </form>
         <form method="post" action="{{ url_for('ui.aprovar_proposta', pid=proposta.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm btn-primary" type="submit">
                 <i class="bi bi-check-circle me-1"></i> Aprovar proposta
             </button>
@@ -26,6 +28,7 @@
         <form method="post" action="{{ url_for('ui.excluir_proposta', pid=proposta.id) }}"
               onsubmit="return confirm('Excluir esta proposta?');"
               class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm btn-outline-danger" type="submit">
                 <i class="bi bi-trash me-1"></i>
             </button>
@@ -65,6 +68,7 @@
                 {% endif %}
 
                 <form class="row g-2 mt-3" method="post" action="{{ url_for('ui.add_item', pid=proposta.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="col-md-6">
                         <input type="text" name="descricao" class="form-control" placeholder="Descrição do item" required>
                     </div>
@@ -115,6 +119,7 @@
             <div class="card-body">
                 <h5 class="card-title">Template</h5>
                 <form method="post" action="{{ url_for('ui.atualizar_template', pid=proposta.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-2">
                         <select class="form-select" name="template_id">
                             <option value="">Sem template</option>
@@ -143,6 +148,7 @@
             <div class="card-body">
                 <h5 class="card-title">Desconto</h5>
                 <form method="post" action="{{ url_for('ui.aplicar_desconto', pid=proposta.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-2">
                         <select class="form-select" name="tipo">
                             <option value="nenhum" {% if proposta.tipo_desconto is none %}selected{% endif %}>Nenhum</option>
@@ -165,6 +171,7 @@
                 <h5 class="card-title">Pagamento</h5>
 
                 <form method="post" action="{{ url_for('ui.atualizar_pagamento', pid=proposta.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-2">
                         <label class="form-label">Forma de pagamento</label>
                         <input type="text" name="forma_pagamento" class="form-control">
