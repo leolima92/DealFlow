@@ -9,6 +9,7 @@
                 <h1 class="h4 mb-3">Novo cliente</h1>
 
                 <form method="post" action="{{ url_for('ui.novo_cliente') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
                         <label class="form-label">Nome</label>
                         <input type="text" name="nome" class="form-control" required>

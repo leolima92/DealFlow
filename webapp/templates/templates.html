@@ -38,6 +38,7 @@
                             <form method="post" action="{{ url_for('ui.excluir_template', tid=t.id) }}"
                                   class="d-inline"
                                   onsubmit="return confirm('Excluir este template?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">Excluir</button>
                             </form>
                         </td>

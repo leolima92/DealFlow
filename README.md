@@ -35,7 +35,7 @@ source venv/bin/activate  # Linux/Mac
 
 2. Instale as dependencias
 ```bash
-pip install flask openpyxl reportlab
+pip install -r requirements.txt
 ```
 
 3. Inicie o servidor
@@ -45,11 +45,41 @@ python app.py
 
 Acesse `http://localhost:5000`.
 
+## Desenvolvimento e testes
+```bash
+pip install -r requirements-dev.txt
+```
+
+```bash
+pytest
+ruff check .
+```
+
 ## Configuracao
 - `DEALFLOW_SECRET_KEY`: chave de sessao do Flask (recomendado definir em producao).
-- Logs em `logs/app.log`.
+- `DEALFLOW_SECURE_COOKIES`: define cookies de sessao como `Secure` (use `true` em producao com HTTPS).
+- `DEALFLOW_SESSION_SAMESITE`: padrao `Lax`.
+- `DEALFLOW_LOG_LEVEL`: nivel de log (ex.: `INFO`, `DEBUG`).
+- Logs em `logs/app.log` com rotacao.
 - Base local em `gestor_propostas/services/gestor_propostas.db`.
 - Logo padrao em `static/img/dealflow_logo.png` (usado nos templates).
+
+## Seguranca
+- Senhas armazenadas com hash (Argon2).
+- CSRF habilitado para todos os formularios (Flask-WTF).
+- Cookies de sessao com `HttpOnly` e `SameSite` por padrao.
+
+## Banco de dados (recriacao/seed)
+Para recriar o banco e o usuario admin do zero:
+```bash
+python scripts/init_db.py --reset
+```
+Para evoluir o esquema com migracoes, a recomendacao e migrar para SQLAlchemy + Alembic.
+
+## Screenshots
+![Dashboard do DealFlow](docs/screenshots/dashboard.svg)
+![Criacao de proposta](docs/screenshots/nova-proposta.svg)
+![Exportacao em PDF](docs/screenshots/pdf.svg)
 
 ## Estrutura
 ```

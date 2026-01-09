@@ -17,6 +17,7 @@ from flask import (
 
 BASE_DIR = os.path.dirname(__file__)
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
+PASSWORD_HASH_METHOD = "argon2"
 
 
 @dataclass
@@ -87,7 +88,7 @@ class AuthManager:
         if "admin" not in users:
             admin = User(
                 username="admin",
-                password=generate_password_hash("admin"),
+                password=generate_password_hash("admin", method=PASSWORD_HASH_METHOD),
             )
             users["admin"] = admin
             cls.save_users(users)
@@ -102,7 +103,7 @@ class AuthManager:
             return None
         if user.check_password(password):
             if not cls.is_hashed(user.password):
-                user.password = generate_password_hash(password)
+                user.password = generate_password_hash(password, method=PASSWORD_HASH_METHOD)
                 users[username] = user
                 cls.save_users(users)
             return user
@@ -128,7 +129,7 @@ class AuthManager:
         if username in users:
             return None
 
-        user = User(username=username, password=generate_password_hash(password))
+        user = User(username=username, password=generate_password_hash(password, method=PASSWORD_HASH_METHOD))
         users[username] = user
         cls.save_users(users)
         return user
@@ -139,7 +140,7 @@ class AuthManager:
         user = users.get(username)
         if not user:
             return False
-        user.password = generate_password_hash(new_password)
+        user.password = generate_password_hash(new_password, method=PASSWORD_HASH_METHOD)
         users[username] = user
         cls.save_users(users)
         return True
