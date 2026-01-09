@@ -6,13 +6,21 @@ from typing import Dict
 from ..models import GestorPropostas, Cliente, Proposta, ItemProposta, TemplateProposta
 
 BASE_DIR = os.path.dirname(__file__)
+ROOT_DIR = os.path.dirname(os.path.dirname(BASE_DIR))
+INSTANCE_DIR = os.path.join(ROOT_DIR, "instance")
+DEFAULT_DB_PATH = os.path.join(INSTANCE_DIR, "dealflow.db")
 
 
 class StorageManager:
-    DB_PATH = os.path.join(BASE_DIR, "gestor_propostas.db")
+    DB_PATH = os.environ.get("DEALFLOW_DB_PATH", DEFAULT_DB_PATH)
+
+    @classmethod
+    def _ensure_db_dir(cls) -> None:
+        os.makedirs(os.path.dirname(cls.DB_PATH), exist_ok=True)
 
     @classmethod
     def _get_conn(cls):
+        cls._ensure_db_dir()
         conn = sqlite3.connect(cls.DB_PATH)
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
