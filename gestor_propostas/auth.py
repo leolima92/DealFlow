@@ -3,6 +3,8 @@ import os
 from dataclasses import dataclass
 from typing import Dict, Optional
 
+from werkzeug.security import check_password_hash, generate_password_hash
+
 from flask import (
     Blueprint,
     render_template,
@@ -23,10 +25,18 @@ class User:
     password: str
 
     def check_password(self, raw_password: str) -> bool:
+        if AuthManager.is_hashed(self.password):
+            return check_password_hash(self.password, raw_password)
         return self.password == raw_password
 
 
 class AuthManager:
+    HASH_PREFIXES = ("pbkdf2:", "scrypt:", "argon2:")
+
+    @classmethod
+    def is_hashed(cls, password: str) -> bool:
+        return isinstance(password, str) and password.startswith(cls.HASH_PREFIXES)
+
     @classmethod
     def _load_raw_data(cls) -> Dict:
         if not os.path.isfile(USERS_FILE):
@@ -75,7 +85,10 @@ class AuthManager:
     def ensure_default_admin(cls) -> User:
         users = cls.load_users()
         if "admin" not in users:
-            admin = User(username="admin", password="admin")
+            admin = User(
+                username="admin",
+                password=generate_password_hash("admin"),
+            )
             users["admin"] = admin
             cls.save_users(users)
         return users["admin"]
@@ -85,7 +98,13 @@ class AuthManager:
         cls.ensure_default_admin()
         users = cls.load_users()
         user = users.get(username)
-        if user and user.check_password(password):
+        if not user:
+            return None
+        if user.check_password(password):
+            if not cls.is_hashed(user.password):
+                user.password = generate_password_hash(password)
+                users[username] = user
+                cls.save_users(users)
             return user
         return None
 
@@ -109,7 +128,7 @@ class AuthManager:
         if username in users:
             return None
 
-        user = User(username=username, password=password)
+        user = User(username=username, password=generate_password_hash(password))
         users[username] = user
         cls.save_users(users)
         return user
@@ -120,7 +139,7 @@ class AuthManager:
         user = users.get(username)
         if not user:
             return False
-        user.password = new_password
+        user.password = generate_password_hash(new_password)
         users[username] = user
         cls.save_users(users)
         return True
@@ -136,7 +155,7 @@ def login_view():
 
         user = AuthManager.login(username, password)
         if user:
-            session["user"] = user.username
+            session["username"] = user.username
             flash("Login realizado com sucesso!", "success")
             return redirect(url_for("ui.index")) 
         else:
@@ -147,7 +166,7 @@ def login_view():
 
 @bp.route("/logout")
 def logout_view():
-    session.pop("user", None)
+    session.pop("username", None)
     flash("Você saiu do sistema.", "info")
     return redirect(url_for("auth.login_view"))
 

@@ -51,5 +51,7 @@ def create_app():
     # importa e registra o blueprint da UI
     from .ui import bp as ui_bp
     app.register_blueprint(ui_bp)
+    from .auth import bp as auth_bp
+    app.register_blueprint(auth_bp)
 
     return app
