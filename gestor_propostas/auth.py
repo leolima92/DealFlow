@@ -27,7 +27,10 @@ class User:
 
     def check_password(self, raw_password: str) -> bool:
         if AuthManager.is_hashed(self.password):
-            return check_password_hash(self.password, raw_password)
+            try:
+                return check_password_hash(self.password, raw_password)
+            except ValueError:
+                return False
         return self.password == raw_password
 
 
@@ -37,6 +40,13 @@ class AuthManager:
     @classmethod
     def is_hashed(cls, password: str) -> bool:
         return isinstance(password, str) and password.startswith(cls.HASH_PREFIXES)
+
+    @classmethod
+    def _hash_password(cls, password: str) -> str:
+        try:
+            return generate_password_hash(password, method=PASSWORD_HASH_METHOD)
+        except ValueError:
+            return generate_password_hash(password)
 
     @classmethod
     def _load_raw_data(cls) -> Dict:
@@ -88,7 +98,7 @@ class AuthManager:
         if "admin" not in users:
             admin = User(
                 username="admin",
-                password=generate_password_hash("admin", method=PASSWORD_HASH_METHOD),
+                password=cls._hash_password("admin"),
             )
             users["admin"] = admin
             cls.save_users(users)
@@ -103,7 +113,7 @@ class AuthManager:
             return None
         if user.check_password(password):
             if not cls.is_hashed(user.password):
-                user.password = generate_password_hash(password, method=PASSWORD_HASH_METHOD)
+                user.password = cls._hash_password(password)
                 users[username] = user
                 cls.save_users(users)
             return user
@@ -129,7 +139,7 @@ class AuthManager:
         if username in users:
             return None
 
-        user = User(username=username, password=generate_password_hash(password, method=PASSWORD_HASH_METHOD))
+        user = User(username=username, password=cls._hash_password(password))
         users[username] = user
         cls.save_users(users)
         return user
@@ -140,7 +150,7 @@ class AuthManager:
         user = users.get(username)
         if not user:
             return False
-        user.password = generate_password_hash(new_password, method=PASSWORD_HASH_METHOD)
+        user.password = cls._hash_password(new_password)
         users[username] = user
         cls.save_users(users)
         return True
