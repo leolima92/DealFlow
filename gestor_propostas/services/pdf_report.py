@@ -77,11 +77,14 @@ class PdfReportGenerator:
             linha(f"Proposta #{proposta.id}", negrito=True, pula=8 * mm)
 
         linha(f"Titulo: {proposta.titulo}")
-        linha(f"Cliente: {proposta.cliente.nome}")
-        if proposta.cliente.documento:
-            linha(f"Documento: {proposta.cliente.documento}")
-        if proposta.cliente.contato:
-            linha(f"Contato: {proposta.cliente.contato}")
+        if proposta.cliente:
+            linha(f"Cliente: {proposta.cliente.nome}")
+            if proposta.cliente.documento:
+                linha(f"Documento: {proposta.cliente.documento}")
+            if proposta.cliente.contato:
+                linha(f"Contato: {proposta.cliente.contato}")
+        else:
+            linha("Cliente: não encontrado")
 
         linha(f"Status: {proposta.status}")
         linha(f"Data de criacao: {proposta.data_criacao.strftime('%d/%m/%Y %H:%M')}")

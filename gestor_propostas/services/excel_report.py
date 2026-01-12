@@ -44,6 +44,9 @@ class ExcelReportGenerator:
 
         # Linhas de dados
         for p in gestor.listar_propostas():
+            cliente_nome = p.cliente.nome if p.cliente else ""
+            cliente_documento = p.cliente.documento if p.cliente else ""
+            cliente_contato = p.cliente.contato if p.cliente else ""
             subtotal = p.calcular_subtotal()
             total = p.calcular_total()
             desconto = subtotal - total
@@ -61,9 +64,9 @@ class ExcelReportGenerator:
                 [
                     p.id,
                     p.titulo,
-                    p.cliente.nome,
-                    p.cliente.documento,
-                    p.cliente.contato,
+                    cliente_nome,
+                    cliente_documento,
+                    cliente_contato,
                     p.status,
                     data_criacao_str,
                     p.responsavel or "",

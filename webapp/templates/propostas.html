@@ -53,9 +53,9 @@
           <tr>
             <td>{{ p.id }}</td>
             <td>{{ p.titulo }}</td>
-            <td>{{ p.cliente.nome }}</td>
+            <td>{{ p.cliente.nome if p.cliente else 'Cliente não encontrado' }}</td>
             <td>{{ p.status }}</td>
-            <td>{{ p.data_criacao.strftime("%d/%m/%Y") }}</td>
+            <td>{{ p.data_criacao.strftime("%d/%m/%Y") if p.data_criacao else '-' }}</td>
             <td>
               {% if p.validade %}
                 {{ p.validade.strftime("%d/%m/%Y") }}
