@@ -15,7 +15,7 @@ from flask import (
     session,
 )
 
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 PASSWORD_HASH_METHOD = "argon2"
 

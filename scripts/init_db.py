@@ -1,8 +1,8 @@
 import argparse
 import os
 
-from gestor_propostas.auth import AuthManager, USERS_FILE
-from gestor_propostas.services.storage import StorageManager
+from gestor_propostas.web.auth import AuthManager, USERS_FILE
+from gestor_propostas.infra import StorageManager
 
 
 def main() -> None:
@@ -14,13 +14,15 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    storage = StorageManager()
+
     if args.reset:
-        if os.path.exists(StorageManager.DB_PATH):
-            os.remove(StorageManager.DB_PATH)
+        if os.path.exists(storage.db_path):
+            os.remove(storage.db_path)
         if os.path.exists(USERS_FILE):
             os.remove(USERS_FILE)
 
-    StorageManager.init_db()
+    storage.init_db()
     AuthManager.ensure_default_admin()
 
     print("Banco inicializado. Usuário admin garantido.")

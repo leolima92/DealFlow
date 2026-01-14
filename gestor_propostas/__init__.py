@@ -3,11 +3,13 @@ from logging.handlers import RotatingFileHandler
 import os
 
 from flask import Flask
-from flask_wtf import CSRFProtect
+try:
+    from flask_wtf import CSRFProtect
+except Exception:  # optional dependency
+    CSRFProtect = None
 from dotenv import load_dotenv
 
-from .models import GestorPropostas
-from .services.storage import StorageManager
+from .app_context import AppContext
 
 # === caminhos base ===
 # pasta do pacote gestor_propostas
@@ -38,12 +40,6 @@ logger = logging.getLogger(__name__)
 # Carrega variáveis do .env quando disponível
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
-# instância global do gestor (usada no ui.py)
-gestor = GestorPropostas()
-StorageManager.init_db()
-StorageManager.carregar_tudo(gestor)
-
-
 def create_app():
     # indica explicitamente onde estão templates e estáticos
     app = Flask(
@@ -63,12 +59,16 @@ def create_app():
         SESSION_COOKIE_SECURE=os.environ.get("DEALFLOW_SECURE_COOKIES", "").lower() in {"1", "true", "yes"},
     )
 
-    CSRFProtect(app)
+    if CSRFProtect:
+        CSRFProtect(app)
+    else:
+        logger.warning("CSRFProtect indisponivel; instale flask-wtf para habilitar.")
 
-    # importa e registra o blueprint da UI
-    from .ui import bp as ui_bp
+    app.extensions["app_context"] = AppContext.bootstrap()
+
+    # importa e registra os blueprints
+    from .web import ui_bp, auth_bp
     app.register_blueprint(ui_bp)
-    from .auth import bp as auth_bp
     app.register_blueprint(auth_bp)
 
     return app

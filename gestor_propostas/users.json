@@ -1,5 +1,5 @@
 {
   "admin": {
-    "password": "admin"
+    "password": "scrypt:32768:8:1$EAo4krk7mZUguscc$f57d982cca45617d6bbeda85cb31a48a0ca1174c74d54e8fd666040ccde07af598df041cbe1211005759706220b7429eda087ce7008748eba938433d156e1123"
   }
 }

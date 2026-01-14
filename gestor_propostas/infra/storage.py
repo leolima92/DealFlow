@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 from typing import Dict
 
-from ..models import GestorPropostas, Cliente, Proposta, ItemProposta, TemplateProposta
+from ..domain import GestorPropostas, Cliente, Proposta, ItemProposta, TemplateProposta
 
 BASE_DIR = os.path.dirname(__file__)
 ROOT_DIR = os.path.dirname(os.path.dirname(BASE_DIR))
@@ -12,22 +12,20 @@ DEFAULT_DB_PATH = os.path.join(INSTANCE_DIR, "dealflow.db")
 
 
 class StorageManager:
-    DB_PATH = os.environ.get("DEALFLOW_DB_PATH", DEFAULT_DB_PATH)
+    def __init__(self, db_path: str | None = None):
+        self.db_path = db_path or os.environ.get("DEALFLOW_DB_PATH", DEFAULT_DB_PATH)
 
-    @classmethod
-    def _ensure_db_dir(cls) -> None:
-        os.makedirs(os.path.dirname(cls.DB_PATH), exist_ok=True)
+    def _ensure_db_dir(self) -> None:
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
 
-    @classmethod
-    def _get_conn(cls):
-        cls._ensure_db_dir()
-        conn = sqlite3.connect(cls.DB_PATH)
+    def _get_conn(self):
+        self._ensure_db_dir()
+        conn = sqlite3.connect(self.db_path)
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
-    @classmethod
-    def init_db(cls):
-        with cls._get_conn() as conn:
+    def init_db(self):
+        with self._get_conn() as conn:
             cur = conn.cursor()
 
             # Clientes
@@ -96,17 +94,16 @@ class StorageManager:
                 """
             )
 
-            if not cls._has_column(cur, "propostas", "template_id"):
+            if not self._has_column(cur, "propostas", "template_id"):
                 cur.execute("ALTER TABLE propostas ADD COLUMN template_id INTEGER")
 
-    @classmethod
-    def _has_column(cls, cur: sqlite3.Cursor, table: str, column: str) -> bool:
+    @staticmethod
+    def _has_column(cur: sqlite3.Cursor, table: str, column: str) -> bool:
         cur.execute(f"PRAGMA table_info({table})")
         return any(row[1] == column for row in cur.fetchall())
 
-    @classmethod
-    def salvar_ou_atualizar_cliente(cls, cliente: Cliente):
-        with cls._get_conn() as conn:
+    def salvar_ou_atualizar_cliente(self, cliente: Cliente):
+        with self._get_conn() as conn:
             cur = conn.cursor()
 
             cur.execute("SELECT 1 FROM clientes WHERE id = ?", (cliente.id,))
@@ -132,15 +129,13 @@ class StorageManager:
                     (cliente.nome, cliente.documento, cliente.contato, cliente.id),
                 )
 
-    @classmethod
-    def deletar_cliente(cls, cliente_id: int):
-        with cls._get_conn() as conn:
+    def deletar_cliente(self, cliente_id: int):
+        with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
 
-    @classmethod
-    def salvar_ou_atualizar_proposta(cls, proposta: Proposta):
-        with cls._get_conn() as conn:
+    def salvar_ou_atualizar_proposta(self, proposta: Proposta):
+        with self._get_conn() as conn:
             cur = conn.cursor()
 
             cur.execute("SELECT 1 FROM propostas WHERE id = ?", (proposta.id,))
@@ -207,9 +202,8 @@ class StorageManager:
                     ),
                 )
 
-    @classmethod
-    def deletar_proposta(cls, proposta_id: int):
-        with cls._get_conn() as conn:
+    def deletar_proposta(self, proposta_id: int):
+        with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("DELETE FROM itens WHERE proposta_id = ?", (proposta_id,))
             cur.execute("DELETE FROM propostas WHERE id = ?", (proposta_id,))
@@ -217,9 +211,8 @@ class StorageManager:
     # =========================================================
     #   TEMPLATES
     # =========================================================
-    @classmethod
-    def salvar_ou_atualizar_template(cls, template: TemplateProposta):
-        with cls._get_conn() as conn:
+    def salvar_ou_atualizar_template(self, template: TemplateProposta):
+        with self._get_conn() as conn:
             cur = conn.cursor()
 
             cur.execute("SELECT 1 FROM templates WHERE id = ?", (template.id,))
@@ -282,18 +275,16 @@ class StorageManager:
                     ),
                 )
 
-    @classmethod
-    def deletar_template(cls, template_id: int):
-        with cls._get_conn() as conn:
+    def deletar_template(self, template_id: int):
+        with self._get_conn() as conn:
             cur = conn.cursor()
             cur.execute("DELETE FROM templates WHERE id = ?", (template_id,))
 
     # =========================================================
     #   ITENS
     # =========================================================
-    @classmethod
-    def sincronizar_itens_proposta(cls, proposta: Proposta):
-        with cls._get_conn() as conn:
+    def sincronizar_itens_proposta(self, proposta: Proposta):
+        with self._get_conn() as conn:
             cur = conn.cursor()
 
             cur.execute("DELETE FROM itens WHERE proposta_id = ?", (proposta.id,))
@@ -307,13 +298,12 @@ class StorageManager:
                     (proposta.id, item.descricao, item.quantidade, item.valor_unitario),
                 )
 
-    @classmethod
-    def carregar_tudo(cls, gestor: GestorPropostas):
+    def carregar_tudo(self, gestor: GestorPropostas):
         gestor.clientes.clear()
         gestor.propostas.clear()
         gestor.templates.clear()
 
-        with cls._get_conn() as conn:
+        with self._get_conn() as conn:
             cur = conn.cursor()
 
             # ---- Clientes

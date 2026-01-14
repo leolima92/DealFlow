@@ -5,13 +5,14 @@ from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
 
-from ..models import Proposta, TemplateProposta
+from ..domain import Proposta, TemplateProposta
+from ..reports import ProposalReportGenerator
 from .. import ROOT_DIR
 
 
-class PdfReportGenerator:
+class PdfReportGenerator(ProposalReportGenerator):
     @classmethod
-    def gerar_pdf_proposta(
+    def gerar(
         cls,
         proposta: Proposta,
         caminho: str,

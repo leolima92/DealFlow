@@ -1,7 +1,7 @@
-# from gestor_propostas.models import GestorPropostas
+# from gestor_propostas.domain import GestorPropostas
 # from gestor_propostas.ui import App
 # from gestor_propostas.login_ui import LoginWindow
-# from gestor_propostas.services.storage import StorageManager
+# from gestor_propostas.infra import StorageManager
 
 
 # def main():
@@ -13,15 +13,16 @@
 #         return
 
 #     gestor = GestorPropostas()
-#     StorageManager.init_db()
-#     StorageManager.carregar_tudo(gestor)
+#     storage = StorageManager()
+#     storage.init_db()
+#     storage.carregar_tudo(gestor)
 
 #     app = App(gestor, usuario_logado=user.username)
 #     app.atualizar_listas()
 
 #     def on_close():
 #         try:
-#             StorageManager.salvar_tudo(gestor)
+#             storage.salvar_tudo(gestor)
 #         finally:
 #             app.destroy()
 

@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from .auth import AuthManager, User
+from .web.auth import AuthManager, User
 
 
 class LoginWindow(tk.Tk):

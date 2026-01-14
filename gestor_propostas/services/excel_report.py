@@ -5,9 +5,12 @@ from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
 
-class ExcelReportGenerator:
+from ..reports import PropostasReportGenerator
+
+
+class ExcelReportGenerator(PropostasReportGenerator):
     @classmethod
-    def gerar_excel(cls, gestor, caminho: str | None = None) -> str:
+    def gerar(cls, gestor, caminho: str | None = None) -> str:
         if not caminho:
             fd, caminho = tempfile.mkstemp(
                 suffix=".xlsx", prefix="dealflow_propostas_"
