@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from .web.auth import AuthManager, User
+from .infra.auth import User
+from .app_services import AuthService
 
 
 class LoginWindow(tk.Tk):
@@ -13,7 +14,8 @@ class LoginWindow(tk.Tk):
 
         self._user: User | None = None
 
-        AuthManager.ensure_default_admin()  # garante admin/admin pelo menos uma vez
+        self._auth_service = AuthService()
+        self._auth_service.ensure_default_admin()  # garante admin/admin pelo menos uma vez
 
         self._criar_widgets()
 
@@ -55,7 +57,7 @@ class LoginWindow(tk.Tk):
             messagebox.showwarning("Atenção", "Informe usuário e senha.")
             return
 
-        user = AuthManager.authenticate(username, password)
+        user = self._auth_service.authenticate(username, password)
 
         if user:
             self._user = user
@@ -71,7 +73,7 @@ class LoginWindow(tk.Tk):
             messagebox.showwarning("Atenção", "Preencha usuário e senha para cadastrar.")
             return
 
-        if AuthManager.create_user(username, password):
+        if self._auth_service.create_user(username, password):
             messagebox.showinfo("Sucesso", f"Usuário '{username}' cadastrado com sucesso!")
         else:
             messagebox.showerror("Erro", "Não foi possível cadastrar. Usuário já existe?")

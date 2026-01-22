@@ -7,7 +7,7 @@ from reportlab.lib.units import mm
 
 from ..domain import Proposta, TemplateProposta
 from ..reports import ProposalReportGenerator
-from .. import ROOT_DIR
+from ..paths import ROOT_DIR
 
 
 class PdfReportGenerator(ProposalReportGenerator):

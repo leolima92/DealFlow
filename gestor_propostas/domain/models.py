@@ -1,6 +1,9 @@
 from datetime import datetime
 from typing import List, Optional
 
+from .policies import StatusPolicy
+from .value_objects import Desconto
+
 class Cliente:
     _contador_id = 1
 
@@ -71,7 +74,7 @@ class TemplateProposta:
 
 class Proposta:
     _contador_id = 1
-    STATUS_VALIDOS = ["rascunho", "enviada", "aceita", "recusada", "cancelada"]
+    STATUS_VALIDOS = list(StatusPolicy.VALID_STATUSES)
 
     def __init__(
         self,
@@ -95,9 +98,11 @@ class Proposta:
         self.condicoes_pagamento = condicoes_pagamento
         self.template_id = template_id
 
-        self.tipo_desconto = None  
+        self.tipo_desconto = None
         self.desconto_percentual = 0.0
         self.desconto_valor = 0.0
+        self._desconto = Desconto.nenhum()
+        self._sincronizar_desconto()
 
     def adicionar_item(self, item: ItemProposta):
         self.itens.append(item)
@@ -106,22 +111,17 @@ class Proposta:
         return sum(item.total for item in self.itens)
 
     def definir_desconto_percentual(self, percentual: float):
-        self.tipo_desconto = "%"
-        self.desconto_percentual = max(0.0, percentual)
-        self.desconto_valor = 0.0
+        self._set_desconto(Desconto.percentual(percentual))
 
     def definir_desconto_valor(self, valor: float):
-        self.tipo_desconto = "R"
-        self.desconto_valor = max(0.0, valor)
-        self.desconto_percentual = 0.0
+        self._set_desconto(Desconto.valor(valor))
+
+    def remover_desconto(self):
+        self._set_desconto(Desconto.nenhum())
 
     def calcular_desconto(self) -> float:
         subtotal = self.calcular_subtotal()
-        if self.tipo_desconto == "%":
-            return subtotal * (self.desconto_percentual / 100.0)
-        elif self.tipo_desconto == "R":
-            return self.desconto_valor
-        return 0.0
+        return self._desconto.calcular(subtotal)
 
     def calcular_total(self) -> float:
         subtotal = self.calcular_subtotal()
@@ -129,10 +129,22 @@ class Proposta:
         return max(0.0, subtotal - desconto)
 
     def alterar_status(self, novo_status: str):
-        novo_status = novo_status.lower()
-        if novo_status not in Proposta.STATUS_VALIDOS:
-            raise ValueError(f"Status inválido: {novo_status}")
-        self.status = novo_status
+        self.status = StatusPolicy.ensure_valid(novo_status)
+
+    def carregar_desconto_dos_campos(self):
+        self._desconto = Desconto.from_db_fields(
+            self.tipo_desconto,
+            self.desconto_percentual,
+            self.desconto_valor,
+        )
+        self._sincronizar_desconto()
+
+    def _set_desconto(self, desconto: Desconto):
+        self._desconto = desconto
+        self._sincronizar_desconto()
+
+    def _sincronizar_desconto(self):
+        self.tipo_desconto, self.desconto_percentual, self.desconto_valor = self._desconto.as_db_fields()
 
     def __str__(self) -> str:
         subtotal = self.calcular_subtotal()

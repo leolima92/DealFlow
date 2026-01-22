@@ -10,15 +10,7 @@ except Exception:  # optional dependency
 from dotenv import load_dotenv
 
 from .app_context import AppContext
-
-# === caminhos base ===
-# pasta do pacote gestor_propostas
-PKG_DIR = os.path.dirname(__file__)
-# raiz do projeto (onde está app.py)
-ROOT_DIR = os.path.dirname(PKG_DIR)
-
-TEMPLATE_DIR = os.path.join(ROOT_DIR, "webapp", "templates")
-STATIC_DIR = os.path.join(ROOT_DIR, "static")
+from .paths import ROOT_DIR, TEMPLATE_DIR, STATIC_DIR
 
 # === configuração de logging ===
 LOG_DIR = os.path.join(ROOT_DIR, "logs")

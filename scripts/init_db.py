@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from gestor_propostas.web.auth import AuthManager, USERS_FILE
+from gestor_propostas.infra.auth import AuthManager, USERS_FILE
 from gestor_propostas.infra import StorageManager
 
 

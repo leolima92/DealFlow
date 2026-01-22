@@ -436,6 +436,7 @@ class StorageManager:
                 prop.tipo_desconto = tipo_desconto
                 prop.desconto_percentual = desconto_percentual or 0.0
                 prop.desconto_valor = desconto_valor or 0.0
+                prop.carregar_desconto_dos_campos()
 
                 gestor.propostas.append(prop)
                 mapa_propostas[p_id] = prop

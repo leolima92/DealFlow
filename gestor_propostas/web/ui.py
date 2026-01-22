@@ -15,11 +15,7 @@ from flask import (
     after_this_request,
 )
 
-from ..domain import ItemProposta
-from ..services.excel_report import ExcelReportGenerator
-from ..services.pdf_report import PdfReportGenerator
 from ..app_context import get_context
-from .auth import AuthManager
 
 
 bp = Blueprint("ui", __name__)
@@ -28,12 +24,28 @@ logger = logging.getLogger(__name__)
 
 # ========= helpers ========= #
 
-def _gestor():
-    return get_context().gestor
+def _cliente_service():
+    return get_context().cliente_service
 
 
-def _storage():
-    return get_context().storage
+def _proposta_service():
+    return get_context().proposta_service
+
+
+def _template_service():
+    return get_context().template_service
+
+
+def _dashboard_service():
+    return get_context().dashboard_service
+
+
+def _auth_service():
+    return get_context().auth_service
+
+
+def _report_service():
+    return get_context().report_service
 
 
 def _parse_int(value, default=None):
@@ -86,7 +98,7 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
 
-        user = AuthManager.authenticate(username, password)
+        user = _auth_service().authenticate(username, password)
         if user:
             session["username"] = user.username
             logger.info(f"Usuário '{user.username}' fez login com sucesso.")
@@ -129,7 +141,7 @@ def register():
             flash("As senhas não conferem.", "error")
             return redirect(url_for("ui.register"))
 
-        user = AuthManager.create_user(username, password)
+        user = _auth_service().create_user(username, password)
         if not user:
             flash("Usuário já existe. Escolha outro.", "error")
             return redirect(url_for("ui.register"))
@@ -145,54 +157,23 @@ def register():
 @bp.route("/")
 @login_required
 def index():
-    gestor = _gestor()
     q = request.args.get("q", "").strip().lower()
     status = request.args.get("status", "").strip().lower()
 
-    todas_propostas = gestor.listar_propostas()
-    propostas = todas_propostas
-
-    if status:
-        propostas = [p for p in propostas if p.status == status]
-
-    if q:
-        propostas = [
-            p for p in propostas
-            if q in p.titulo.lower() or (p.cliente and q in p.cliente.nome.lower())
-        ]
-
-    statuses = sorted({p.status for p in todas_propostas}, key=str.lower)
-    total_propostas = len(todas_propostas)
-    total_clientes = len(gestor.listar_clientes())
-    propostas_aceitas = [p for p in todas_propostas if p.status == "aceita"]
-    qtd_aceitas = len(propostas_aceitas)
-    valor_total_aceitas = sum(p.calcular_total() for p in propostas_aceitas)
-
-    # Dados para gráficos
-    from collections import Counter, defaultdict
-    status_counts = Counter(p.status for p in todas_propostas)
-    status_data = [{"status": k, "count": v} for k, v in status_counts.items()]
-
-    # Valor arrecadado por mês (para propostas aceitas)
-    arrecadacao_por_mes = defaultdict(float)
-    for p in propostas_aceitas:
-        if p.data_criacao:
-            mes_ano = p.data_criacao.strftime("%Y-%m")
-            arrecadacao_por_mes[mes_ano] += p.calcular_total()
-    arrecadacao_mes_data = [{"mes": k, "valor": v} for k, v in sorted(arrecadacao_por_mes.items())]
+    vm = _dashboard_service().build_dashboard(q, status)
 
     return render_template(
         "index.html",
-        propostas=propostas,
-        filtro_q=q,
-        filtro_status=status,
-        statuses=statuses,
-        total_propostas=total_propostas,
-        total_clientes=total_clientes,
-        qtd_aceitas=qtd_aceitas,
-        valor_total_aceitas=valor_total_aceitas,
-        status_data=status_data,
-        arrecadacao_mes_data=arrecadacao_mes_data,
+        propostas=vm.propostas,
+        filtro_q=vm.filtro_q,
+        filtro_status=vm.filtro_status,
+        statuses=vm.statuses,
+        total_propostas=vm.total_propostas,
+        total_clientes=vm.total_clientes,
+        qtd_aceitas=vm.qtd_aceitas,
+        valor_total_aceitas=vm.valor_total_aceitas,
+        status_data=vm.status_data,
+        arrecadacao_mes_data=vm.arrecadacao_mes_data,
     )
 
 
@@ -201,8 +182,7 @@ def index():
 @bp.route("/propostas/<int:pid>")
 @login_required
 def proposta_detalhe(pid: int):
-    gestor = _gestor()
-    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    proposta = _proposta_service().obter_por_id(pid)
     if not proposta:
         flash("Proposta não encontrada.", "error")
         return redirect(url_for("ui.index"))
@@ -211,9 +191,9 @@ def proposta_detalhe(pid: int):
         flash("Cliente da proposta não encontrado.", "error")
         return redirect(url_for("ui.index"))
 
-    templates = gestor.listar_templates()
+    templates = _template_service().listar()
     template_selecionado = (
-        gestor.obter_template_por_id(proposta.template_id)
+        _template_service().obter_por_id(proposta.template_id)
         if proposta.template_id
         else None
     )
@@ -229,9 +209,8 @@ def proposta_detalhe(pid: int):
 @bp.route("/propostas/nova", methods=["GET", "POST"])
 @login_required
 def nova_proposta():
-    gestor = _gestor()
-    clientes = gestor.listar_clientes()
-    templates = gestor.listar_templates()
+    clientes = _cliente_service().listar()
+    templates = _template_service().listar()
 
     if not clientes:
         flash("Cadastre ao menos um cliente antes de criar uma proposta.", "info")
@@ -261,35 +240,18 @@ def nova_proposta():
                 flash("Data de validade inválida. Use AAAA-MM-DD.", "error")
                 return redirect(url_for("ui.nova_proposta"))
 
-        cond_parts = []
-        if forma_pagamento:
-            cond_parts.append(f"Forma: {forma_pagamento}")
-        if num_parcelas:
-            cond_parts.append(f"Parcelas: {num_parcelas}x")
-        if pagamento_obs:
-            cond_parts.append(f"Obs: {pagamento_obs}")
-        cond_pag = " | ".join(cond_parts)
+        template = _template_service().obter_por_id(template_id) if template_id else None
 
-        template = gestor.obter_template_por_id(template_id) if template_id else None
-        if template:
-            if not titulo and template.titulo_padrao:
-                titulo = template.titulo_padrao
-            if not responsavel and template.responsavel_padrao:
-                responsavel = template.responsavel_padrao
-            if not cond_pag and template.condicoes_pagamento_padrao:
-                cond_pag = template.condicoes_pagamento_padrao
-
-        prop = gestor.criar_proposta(
-            cliente,
-            titulo,
-            validade=validade,
+        prop = _proposta_service().criar_com_template(
+            cliente=cliente,
+            titulo=titulo,
             responsavel=responsavel,
-            condicoes_pagamento=cond_pag,
-            template_id=template.id if template else None,
+            forma_pagamento=forma_pagamento,
+            num_parcelas=num_parcelas,
+            pagamento_obs=pagamento_obs,
+            validade=validade,
+            template=template,
         )
-
-        _storage().salvar_ou_atualizar_proposta(prop)
-        _storage().sincronizar_itens_proposta(prop)
 
         logger.info(f"Proposta #{prop.id} criada por usuário '{session.get('username')}' para cliente '{cliente.nome}'.")
         flash(f"Proposta #{prop.id} criada com sucesso!", "success")
@@ -305,8 +267,7 @@ def nova_proposta():
 @bp.route("/propostas/<int:pid>/add_item", methods=["POST"])
 @login_required
 def add_item(pid: int):
-    gestor = _gestor()
-    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    proposta = _proposta_service().obter_por_id(pid)
     if not proposta:
         flash("Proposta não encontrada.", "error")
         return redirect(url_for("ui.index"))
@@ -330,11 +291,7 @@ def add_item(pid: int):
         flash("Valor unitário deve ser um número válido maior ou igual a zero.", "error")
         return redirect(url_for("ui.proposta_detalhe", pid=pid))
 
-    item = ItemProposta(desc, qtd, valor)
-    proposta.adicionar_item(item)
-
-    _storage().sincronizar_itens_proposta(proposta)
-    _storage().salvar_ou_atualizar_proposta(proposta)
+    _proposta_service().adicionar_item(proposta, desc, qtd, valor)
 
     flash("Item adicionado com sucesso!", "success")
     return redirect(url_for("ui.proposta_detalhe", pid=pid))
@@ -343,8 +300,7 @@ def add_item(pid: int):
 @bp.route("/propostas/<int:pid>/desconto", methods=["POST"])
 @login_required
 def aplicar_desconto(pid: int):
-    gestor = _gestor()
-    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    proposta = _proposta_service().obter_por_id(pid)
     if not proposta:
         flash("Proposta não encontrada.", "error")
         return redirect(url_for("ui.index"))
@@ -353,9 +309,7 @@ def aplicar_desconto(pid: int):
     valor_str = request.form.get("valor", "").strip()
 
     if tipo == "nenhum":
-        proposta.tipo_desconto = None
-        proposta.desconto_percentual = 0.0
-        proposta.desconto_valor = 0.0
+        _proposta_service().aplicar_desconto(proposta, tipo)
         msg = "Desconto removido."
     else:
         valor = _parse_money(valor_str)
@@ -370,15 +324,13 @@ def aplicar_desconto(pid: int):
             if valor > 100:
                 flash("Desconto percentual deve ser entre 0 e 100.", "error")
                 return redirect(url_for("ui.proposta_detalhe", pid=pid))
-            proposta.definir_desconto_percentual(valor)
+            _proposta_service().aplicar_desconto(proposta, tipo, valor)
             msg = f"Desconto de {valor:.2f}% aplicado."
         elif tipo == "R":
-            proposta.definir_desconto_valor(valor)
+            _proposta_service().aplicar_desconto(proposta, tipo, valor)
             msg = f"Desconto de R$ {valor:.2f} aplicado."
         else:
             msg = "Tipo de desconto inválido."
-
-    _storage().salvar_ou_atualizar_proposta(proposta)
     flash(msg, "success")
     return redirect(url_for("ui.proposta_detalhe", pid=pid))
 
@@ -386,8 +338,7 @@ def aplicar_desconto(pid: int):
 @bp.route("/propostas/<int:pid>/pagamento", methods=["POST"])
 @login_required
 def atualizar_pagamento(pid: int):
-    gestor = _gestor()
-    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    proposta = _proposta_service().obter_por_id(pid)
     if not proposta:
         flash("Proposta não encontrada.", "error")
         return redirect(url_for("ui.index"))
@@ -405,8 +356,7 @@ def atualizar_pagamento(pid: int):
         cond_parts.append(f"Obs: {pagamento_obs}")
     cond_pag = " | ".join(cond_parts)
 
-    proposta.condicoes_pagamento = cond_pag
-    _storage().salvar_ou_atualizar_proposta(proposta)
+    _proposta_service().atualizar_pagamento(proposta, cond_pag)
 
     flash("Condições de pagamento atualizadas.", "success")
     return redirect(url_for("ui.proposta_detalhe", pid=pid))
@@ -415,46 +365,35 @@ def atualizar_pagamento(pid: int):
 @bp.route("/propostas/<int:pid>/template", methods=["POST"])
 @login_required
 def atualizar_template(pid: int):
-    gestor = _gestor()
-    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    proposta = _proposta_service().obter_por_id(pid)
     if not proposta:
         flash("Proposta não encontrada.", "error")
         return redirect(url_for("ui.index"))
 
     template_id = _parse_int(request.form.get("template_id"))
     if template_id:
-        template = gestor.obter_template_por_id(template_id)
+        template = _template_service().obter_por_id(template_id)
         if not template:
             flash("Template invalido.", "error")
             return redirect(url_for("ui.proposta_detalhe", pid=pid))
-        proposta.template_id = template.id
+        _proposta_service().atualizar_template(proposta, template.id)
         flash("Template atualizado.", "success")
     else:
-        proposta.template_id = None
+        _proposta_service().atualizar_template(proposta, None)
         flash("Template removido.", "success")
 
-    _storage().salvar_ou_atualizar_proposta(proposta)
     return redirect(url_for("ui.proposta_detalhe", pid=pid))
 
 
 @bp.route("/propostas/<int:pid>/excluir", methods=["POST"])
 @login_required
 def excluir_proposta(pid: int):
-    gestor = _gestor()
-    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    proposta = _proposta_service().obter_por_id(pid)
     if not proposta:
         flash("Proposta não encontrada.", "error")
         return redirect(url_for("ui.index"))
 
-    gestor.propostas = [p for p in gestor.propostas if p.id != pid]
-
-    try:
-        storage = _storage()
-        if hasattr(storage, "excluir_proposta"):
-            storage.excluir_proposta(pid)
-        else:
-            storage.deletar_proposta(pid)
-    except Exception:
+    if not _proposta_service().excluir(pid):
         flash(
             "Erro ao excluir no banco, mas proposta foi removida da lista atual.",
             "error",
@@ -467,8 +406,7 @@ def excluir_proposta(pid: int):
 @bp.route("/propostas/<int:pid>/aprovar", methods=["POST"])
 @login_required
 def aprovar_proposta(pid: int):
-    gestor = _gestor()
-    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    proposta = _proposta_service().obter_por_id(pid)
     if not proposta:
         flash("Proposta não encontrada.", "error")
         return redirect(url_for("ui.index"))
@@ -477,8 +415,7 @@ def aprovar_proposta(pid: int):
         flash(f"A Proposta #{pid} já está aceita.", "info")
         return redirect(url_for("ui.index"))
 
-    proposta.alterar_status("aceita")
-    _storage().salvar_ou_atualizar_proposta(proposta)
+    _proposta_service().alterar_status(proposta, "aceita")
 
     logger.info(f"Proposta #{pid} aprovada por usuário '{session.get('username')}'.")
     flash(f"Proposta #{pid} aprovada com sucesso!", "success")
@@ -488,8 +425,7 @@ def aprovar_proposta(pid: int):
 @bp.route("/propostas/<int:pid>/enviar", methods=["POST"])
 @login_required
 def enviar_proposta(pid: int):
-    gestor = _gestor()
-    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    proposta = _proposta_service().obter_por_id(pid)
     if not proposta:
         flash("Proposta não encontrada.", "error")
         return redirect(url_for("ui.index"))
@@ -498,8 +434,7 @@ def enviar_proposta(pid: int):
         flash(f"A Proposta #{pid} já foi enviada.", "info")
         return redirect(url_for("ui.index"))
 
-    proposta.alterar_status("enviada")
-    _storage().salvar_ou_atualizar_proposta(proposta)
+    _proposta_service().alterar_status(proposta, "enviada")
 
     logger.info(f"Proposta #{pid} marcada como enviada por usuário '{session.get('username')}'.")
     flash(f"Proposta #{pid} marcada como enviada!", "success")
@@ -509,46 +444,40 @@ def enviar_proposta(pid: int):
 @bp.route("/propostas/excel")
 @login_required
 def download_excel():
-    gestor = _gestor()
-    if not gestor.listar_propostas():
+    propostas = _proposta_service().listar()
+    if not propostas:
         flash("Não há propostas para exportar.", "info")
         return redirect(url_for("ui.index"))
 
-    caminho = ExcelReportGenerator.gerar(gestor)
+    caminho = _report_service().gerar_excel_temp()
     return send_file(caminho, as_attachment=True)
 
 
 @bp.route("/propostas/<int:pid>/pdf")
 @login_required
 def download_pdf(pid: int):
-    gestor = _gestor()
-    proposta = next((p for p in gestor.propostas if p.id == pid), None)
+    proposta = _proposta_service().obter_por_id(pid)
     if not proposta:
         flash("Proposta não encontrada.", "error")
         return redirect(url_for("ui.index"))
 
-    from tempfile import NamedTemporaryFile
-
-    tmp = NamedTemporaryFile(delete=False, suffix=f"_proposta_{proposta.id}.pdf")
-    tmp.close()
-
     template = (
-        gestor.obter_template_por_id(proposta.template_id)
+        _template_service().obter_por_id(proposta.template_id)
         if proposta.template_id
         else None
     )
-    PdfReportGenerator.gerar(proposta, tmp.name, template=template)
+    tmp_path = _report_service().gerar_pdf_temp(proposta, template=template)
 
     @after_this_request
     def _cleanup(response):
         try:
-            os.remove(tmp.name)
+            os.remove(tmp_path)
         except OSError:
-            logger.warning("Falha ao remover PDF temporário: %s", tmp.name)
+            logger.warning("Falha ao remover PDF temporário: %s", tmp_path)
         return response
 
     return send_file(
-        tmp.name,
+        tmp_path,
         as_attachment=True,
         download_name=f"proposta_{proposta.id}.pdf",
     )
@@ -559,42 +488,27 @@ def download_pdf(pid: int):
 @bp.route("/propostas", endpoint="listar_propostas")
 @login_required
 def propostas_lista():
-    gestor = _gestor()
     q = request.args.get("q", "").strip().lower()
     status = request.args.get("status", "").strip()
     page = request.args.get("page", 1, type=int)
     per_page = 10
 
-    todas_propostas = gestor.listar_propostas()
-    propostas = todas_propostas
-
-    if status:
-        propostas = [p for p in propostas if p.status == status.lower()]
-
-    if q:
-        propostas = [
-            p for p in propostas
-            if q in p.titulo.lower() or (p.cliente and q in p.cliente.nome.lower()) or q in str(p.id)
-        ]
-
-    # paginação
-    total_propostas_filtradas = len(propostas)
-    start = (page - 1) * per_page
-    end = start + per_page
-    propostas_paginadas = propostas[start:end]
-    total_pages = (total_propostas_filtradas + per_page - 1) // per_page
-
-    statuses = sorted({p.status for p in todas_propostas}, key=str.lower)
+    vm = _dashboard_service().build_propostas_list(
+        q=q,
+        status=status,
+        page=page,
+        per_page=per_page,
+    )
 
     return render_template(
         "propostas.html",
-        propostas=propostas_paginadas,
-        filtro_q=q,
-        filtro_status=status,
-        statuses=statuses,
-        current_page=page,
-        total_pages=total_pages,
-        total_propostas=total_propostas_filtradas,
+        propostas=vm.propostas,
+        filtro_q=vm.filtro_q,
+        filtro_status=vm.filtro_status,
+        statuses=vm.statuses,
+        current_page=vm.current_page,
+        total_pages=vm.total_pages,
+        total_propostas=vm.total_propostas,
     )
 
 
@@ -603,21 +517,19 @@ def propostas_lista():
 @bp.route("/templates")
 @login_required
 def templates_lista():
-    gestor = _gestor()
-    return render_template("templates.html", templates=gestor.listar_templates())
+    return render_template("templates.html", templates=_template_service().listar())
 
 
 @bp.route("/templates/novo", methods=["GET", "POST"])
 @login_required
 def novo_template():
-    gestor = _gestor()
     if request.method == "POST":
         nome = request.form.get("nome", "").strip()
         if not nome:
             flash("Nome do template e obrigatorio.", "error")
             return redirect(url_for("ui.novo_template"))
 
-        template = gestor.criar_template(
+        _template_service().criar(
             nome=nome,
             titulo_padrao=request.form.get("titulo_padrao", "").strip(),
             responsavel_padrao=request.form.get("responsavel_padrao", "").strip(),
@@ -629,8 +541,6 @@ def novo_template():
             usar_logo=request.form.get("usar_logo") == "1",
             logo_path=request.form.get("logo_path", "").strip() or "static/img/dealflow_logo.png",
         )
-
-        _storage().salvar_ou_atualizar_template(template)
         flash("Template criado com sucesso.", "success")
         return redirect(url_for("ui.templates_lista"))
 
@@ -640,8 +550,7 @@ def novo_template():
 @bp.route("/templates/<int:tid>/editar", methods=["GET", "POST"])
 @login_required
 def editar_template(tid: int):
-    gestor = _gestor()
-    template = gestor.obter_template_por_id(tid)
+    template = _template_service().obter_por_id(tid)
     if not template:
         flash("Template nao encontrado.", "error")
         return redirect(url_for("ui.templates_lista"))
@@ -663,7 +572,7 @@ def editar_template(tid: int):
         template.usar_logo = request.form.get("usar_logo") == "1"
         template.logo_path = request.form.get("logo_path", "").strip() or "static/img/dealflow_logo.png"
 
-        _storage().salvar_ou_atualizar_template(template)
+        _template_service().atualizar(template)
         flash("Template atualizado.", "success")
         return redirect(url_for("ui.templates_lista"))
 
@@ -673,19 +582,12 @@ def editar_template(tid: int):
 @bp.route("/templates/<int:tid>/excluir", methods=["POST"])
 @login_required
 def excluir_template(tid: int):
-    gestor = _gestor()
-    template = gestor.obter_template_por_id(tid)
+    template = _template_service().obter_por_id(tid)
     if not template:
         flash("Template nao encontrado.", "error")
         return redirect(url_for("ui.templates_lista"))
 
-    for proposta in gestor.propostas:
-        if proposta.template_id == tid:
-            proposta.template_id = None
-            _storage().salvar_ou_atualizar_proposta(proposta)
-
-    gestor.templates = [t for t in gestor.templates if t.id != tid]
-    _storage().deletar_template(tid)
+    _template_service().excluir(tid)
 
     flash("Template excluido.", "success")
     return redirect(url_for("ui.templates_lista"))
@@ -696,14 +598,12 @@ def excluir_template(tid: int):
 @bp.route("/clientes")
 @login_required
 def clientes():
-    gestor = _gestor()
-    return render_template("clientes.html", clientes=gestor.listar_clientes())
+    return render_template("clientes.html", clientes=_cliente_service().listar())
 
 
 @bp.route("/clientes/novo", methods=["GET", "POST"])
 @login_required
 def novo_cliente():
-    gestor = _gestor()
     if request.method == "POST":
         nome = request.form.get("nome", "").strip()
         documento = request.form.get("documento", "").strip()
@@ -713,8 +613,7 @@ def novo_cliente():
             flash("Nome do cliente é obrigatório.", "error")
             return redirect(url_for("ui.novo_cliente"))
 
-        cliente = gestor.criar_cliente(nome, documento, contato)
-        _storage().salvar_ou_atualizar_cliente(cliente)
+        cliente = _cliente_service().criar(nome, documento, contato)
 
         flash(f"Cliente '{cliente.nome}' criado com sucesso!", "success")
         return redirect(url_for("ui.clientes"))
